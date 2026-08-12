@@ -1,0 +1,468 @@
+<!-- VIEW: Admin Dashboard -->
+<section id="view-admin" class="section-hidden animate-slide-up w-full xl:h-full xl:min-h-0 flex flex-col xl:flex-row gap-4 xl:gap-0 xl:overflow-hidden">
+
+    <!-- Sidebar: Clean, comfortable dark nav -->
+    <aside id="admin-sidebar" class="w-full xl:w-72 xl:h-full xl:overflow-y-auto custom-scrollbar rounded-2xl xl:rounded-none p-6 flex flex-col shrink-0 print:hidden shadow-xs z-40 bg-[#120042] border-b xl:border-b-0 xl:border-r border-white/10">
+        <div class="flex items-center justify-between border-b border-white/10 pb-5 mb-6 shrink-0">
+            <div class="flex items-center gap-3">
+                <div>
+                    <h2 class="text-lg font-black text-white leading-tight tracking-tight">Admin Console</h2>
+                </div>
+            </div>
+            <button id="sidebar-toggle-btn" class="xl:hidden w-11 h-11 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors focus:ring-2 focus:ring-bisu-gold/50" title="Toggle Admin Menu">
+                <i class="fa-solid fa-bars text-lg" id="sidebar-toggle-icon"></i>
+            </button>
+        </div>
+
+        <div id="sidebar-content" class="hidden xl:flex flex-col flex-grow gap-6 animate-fade-in min-h-0">
+            <div>
+                <p class="text-xs font-extrabold text-blue-300/70 uppercase tracking-widest mb-2.5 px-2">Management</p>
+                <nav class="flex flex-col gap-1">
+                    <button id="manage-qrcode-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-bold text-bisu-gold hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
+                        <i class="fa-solid fa-qrcode w-6 text-center mr-2 text-bisu-gold text-base group-hover:scale-110 transition-transform"></i> QR Code Generator
+                    </button>
+                    <button id="admin-settings-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
+                        <i class="fa-solid fa-sliders w-6 text-center mr-2 text-blue-200/80 group-hover:text-white transition-colors text-base group-hover:rotate-45 transition-transform"></i> Form Settings
+                    </button>
+                    <button id="manage-accounts-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
+                        <i class="fa-solid fa-users-gear w-6 text-center mr-2 text-blue-200/80 group-hover:text-white transition-colors text-base group-hover:scale-110 transition-transform"></i> Office Accounts
+                    </button>
+                    <button id="manage-recipients-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
+                        <i class="fa-solid fa-envelope-open-text w-6 text-center mr-2 text-blue-200/80 group-hover:text-white transition-colors text-base group-hover:-translate-y-0.5 transition-transform"></i> Email Recipients
+                    </button>
+                </nav>
+            </div>
+
+            <div>
+                <p class="text-xs font-extrabold text-blue-300/70 uppercase tracking-widest mb-2.5 px-2">Exports & Printing</p>
+                <nav class="flex flex-col gap-1">
+                    <button onclick="printAll()" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
+                        <i class="fa-solid fa-print w-6 text-center mr-2 text-blue-200/80 group-hover:text-white transition-colors text-base"></i> Print Full Dashboard
+                    </button>
+                    <button id="export-pdf-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
+                        <i class="fa-solid fa-file-pdf w-6 text-center mr-2 text-red-400 group-hover:text-red-300 transition-colors text-base"></i> Export PDF Report
+                    </button>
+                    <button id="export-excel-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
+                        <i class="fa-solid fa-file-excel w-6 text-center mr-2 text-green-400 group-hover:text-green-300 transition-colors text-base"></i> Export Excel (.xlsx)
+                    </button>
+                </nav>
+            </div>
+
+            <div>
+                <p class="text-xs font-extrabold text-blue-300/70 uppercase tracking-widest mb-2.5 px-2">Maintenance</p>
+                <nav class="flex flex-col gap-1">
+                    <button id="view-archived-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
+                        <i class="fa-solid fa-vault w-6 text-center mr-2 text-amber-300 group-hover:text-amber-200 transition-colors text-base group-hover:rotate-12 transition-transform"></i> View Archived Vault
+                        <span id="archived-count-badge" class="ml-auto bg-amber-400/20 text-amber-200 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                    </button>
+                    <button id="archive-data-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
+                        <i class="fa-solid fa-box-archive w-6 text-center mr-2 text-blue-200/80 group-hover:text-white transition-colors text-base"></i> Archive Live Records
+                    </button>
+                </nav>
+            </div>
+
+            <button id="logout-admin-btn" class="flex items-center text-left w-full px-3.5 py-3 mt-auto shrink-0 text-sm font-bold text-red-200 hover:text-white hover:bg-red-500/20 rounded-xl transition-all border-t border-white/10 pt-5 cursor-pointer">
+                <i class="fa-solid fa-right-from-bracket w-6 text-center mr-2 text-base"></i> Close Admin Session
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Dashboard Content (Spacious, easy to read, high contrast) -->
+    <div id="admin-dashboard-scroll" class="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden custom-scrollbar bg-slate-50/50 p-6 md:p-8 rounded-2xl xl:rounded-none xl:rounded-tl-2xl shadow-xs border border-slate-200/80 print:bg-white print:border-none print:shadow-none print:p-0 print:overflow-visible w-full">
+        
+        <!-- Print Letterhead (Visible ONLY during print) -->
+        <div id="print-header" class="hidden print:flex flex-col items-center justify-center mb-6 pb-4 w-full pt-2 font-sans">
+            <div class="flex items-center justify-center gap-8 mb-3">
+                <img src="images/BISU.webp" class="h-16 w-auto object-contain" alt="BISU">
+                <img src="images/BAGONG-PILIPINAS-LOGO-1-1.webp" class="h-16 w-auto object-contain" alt="Bagong Pilipinas">
+                <img src="images/images.webp" class="h-16 w-auto object-contain rounded" alt="TUV Rheinland">
+            </div>
+            <div class="text-center font-sans text-slate-900 border-b border-slate-400 w-full max-w-5xl pb-4 mb-5">
+                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-sans font-semibold">Republic of the Philippines</p>
+                <h1 class="text-lg font-bold uppercase tracking-wide">Bohol Island State University</h1>
+                <h2 class="text-sm font-semibold uppercase tracking-wider mt-0.5 text-slate-800">Calape Campus</h2>
+                <p class="text-xs italic text-slate-600 mt-0.5">San Isidro, Calape, Bohol &bull; Quality Management System</p>
+            </div>
+
+            <h2 id="print-title-summary" class="text-sm font-bold text-slate-900 uppercase tracking-wide text-center">MONTHLY CUSTOMER SATISFACTION SUMMARY REPORT</h2>
+            
+            <div id="print-title-report" class="hidden w-full max-w-5xl">
+                <h2 class="text-sm font-bold text-slate-900 uppercase text-center mb-3 tracking-wide">MONTHLY REPORT CARD</h2>
+                <div class="flex justify-between items-end text-xs font-semibold uppercase border-b border-slate-300 pb-2">
+                    <div>Office Concerned : <span id="print-office-concerned" class="border-b border-black inline-block w-64 px-2 text-bisu-blue">_____________________</span></div>
+                    <div>Month / Period : <span id="print-month-year" class="border-b border-black inline-block w-48 px-2 text-center">_____________________</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clean Header Bar -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200/80 print:hidden">
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Customer Satisfaction Analytics</h2>
+                    <span id="db-connection-badge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">LIVE</span>
+                </div>
+                <p class="text-sm text-slate-500 font-medium mt-1">Real-time customer satisfaction metrics and service performance logs. <span id="db-connection-detail" class="text-slate-400"></span></p>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+                <button id="refresh-data-btn" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl transition text-xs font-bold shadow-2xs flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-rotate-right text-slate-400 text-sm"></i> Refresh Dashboard
+                </button>
+            </div>
+        </div>
+
+        <!-- Clear Filters Toolbar -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 mb-6 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 print:hidden">
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-2 text-slate-700 font-bold text-sm shrink-0 pl-1">
+                    <i class="fa-solid fa-filter text-bisu-blue text-sm"></i>
+                    <span>Filter:</span>
+                </div>
+                
+                <!-- Month Filter -->
+                <div class="relative w-40">
+                    <select id="filter-month-select" class="w-full border border-slate-300 rounded-xl pl-3.5 pr-8 py-2 text-xs font-bold focus:border-bisu-blue focus:ring-1 focus:ring-bisu-blue appearance-none bg-slate-50/50 text-slate-800 cursor-pointer">
+                        <option value="all">All Months</option>
+                        <option value="01">January</option>
+                        <option value="02">February</option>
+                        <option value="03">March</option>
+                        <option value="04">April</option>
+                        <option value="05">May</option>
+                        <option value="06">June</option>
+                        <option value="07">July</option>
+                        <option value="08">August</option>
+                        <option value="09">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs"><i class="fa-solid fa-chevron-down"></i></div>
+                </div>
+                
+                <!-- Year Filter -->
+                <div class="relative w-32">
+                    <select id="filter-year-select" class="w-full border border-slate-300 rounded-xl pl-3.5 pr-8 py-2 text-xs font-bold focus:border-bisu-blue focus:ring-1 focus:ring-bisu-blue appearance-none bg-slate-50/50 text-slate-800 cursor-pointer">
+                        <option value="all">All Years</option>
+                    </select>
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs"><i class="fa-solid fa-chevron-down"></i></div>
+                </div>
+
+                <!-- Clear Filter Button -->
+                <button id="clear-filters-btn" class="text-xs font-bold text-slate-500 hover:text-red-600 transition flex items-center gap-1.5 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-slate-100 border border-slate-200">
+                    <i class="fa-solid fa-xmark"></i> Clear Filters
+                </button>
+            </div>
+
+            <div class="text-xs font-semibold text-slate-500 px-2 sm:text-right">
+                Showing entries for selected period
+            </div>
+        </div>
+
+        <!-- Metric Tracking Grid (Larger stats) -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-7 print:hidden">
+            <!-- Total Submissions Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-slate-400 block mb-1">Total Submissions</span>
+                    <p id="stat-total" class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">0</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-50 text-bisu-blue rounded-xl flex items-center justify-center text-xl font-bold border border-blue-100 shrink-0">
+                    <i class="fa-solid fa-users-viewfinder"></i>
+                </div>
+            </div>
+
+            <!-- Average Satisfaction Score Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-slate-400 block mb-1">Avg Satisfaction Rate</span>
+                    <div class="flex items-baseline gap-2">
+                        <p id="stat-avg" class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">0.0</p>
+                        <span class="text-sm font-bold text-slate-400">/ 5.0</span>
+                    </div>
+                </div>
+                <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl font-bold border border-amber-100 shrink-0">
+                    <i class="fa-solid fa-chart-pie"></i>
+                </div>
+            </div>
+
+            <!-- Complaints Tracking Card -->
+            <div id="view-complaints-btn" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between cursor-pointer hover:border-red-300 transition group">
+                <div>
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-red-500 block mb-1">Complaints</span>
+                    <p id="stat-complaints" class="text-3xl sm:text-4xl font-black text-red-600 tracking-tight">0</p>
+                    <span class="text-xs font-bold text-red-600 group-hover:underline inline-flex items-center gap-1 mt-1.5">
+                        Click to view complaints <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </span>
+                </div>
+                <div class="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center text-xl font-bold border border-red-100 shrink-0 group-hover:scale-105 transition-transform">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Individual Report Card Quick Generator -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 mb-8 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-4 print:hidden">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 bg-bisu-blue text-white rounded-xl flex items-center justify-center text-lg shadow-xs shrink-0">
+                    <i class="fa-solid fa-id-card"></i>
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-slate-900 text-base">Individual Office Monthly Report Card (MRC)</h3>
+                    <p class="text-xs text-slate-500 font-medium">Generate or forward a single-office rating summary.</p>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row items-stretch gap-2.5 w-full md:w-auto">
+                <div class="relative min-w-[240px]">
+                    <select id="office-report-card-select" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-xs font-bold focus:border-bisu-blue focus:ring-1 focus:ring-bisu-blue appearance-none bg-slate-50/50 text-slate-800">
+                        <option value="">Select Target Office...</option>
+                    </select>
+                    <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs"><i class="fa-solid fa-chevron-down"></i></div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="generateOfficeReportCard()" class="px-4 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-black transition text-xs font-bold shadow-2xs flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer">
+                        <i class="fa-solid fa-print text-xs"></i> Print MRC
+                    </button>
+                    <button onclick="sendReportToService('MRC')" class="px-4 py-2.5 bg-bisu-gold text-bisu-blue rounded-xl hover:bg-yellow-500 transition text-xs font-bold shadow-2xs flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer">
+                        <i class="fa-solid fa-paper-plane text-xs"></i> Send to Q.A.
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Header -->
+        <div class="mb-5 border-b border-slate-200 pb-3 flex items-center justify-between print:hidden">
+            <div>
+                <h3 class="text-lg font-black text-slate-900 uppercase tracking-tight">Official Summary Reports</h3>
+                <p class="text-xs text-slate-500 font-medium">Citizen's Charter (A), CSF Monthly Rating (B), and Commendations (C)</p>
+            </div>
+        </div>
+
+        <!-- Citizen's Charter Summary Result Section -->
+        <div id="section-table-a" class="bg-white rounded-2xl shadow-2xs border border-slate-200 overflow-hidden mb-7">
+            <div class="bg-slate-50/80 px-6 py-4 border-b border-slate-200 flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 bg-blue-100 text-bisu-blue rounded-xl flex items-center justify-center text-base font-black shrink-0 print:hidden"><i class="fa-solid fa-ranking-star"></i></div>
+                    <div>
+                        <h3 class="font-extrabold text-base text-slate-900 tracking-tight">A. Citizen's Charter Summary Result</h3>
+                        <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Demographics & Charter Knowledge Breakdown</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
+                    <button onclick="printSpecificTable('table-a')" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-print mr-1.5 text-slate-400"></i> Print</button>
+                    <button onclick="sendReportToService('Table A')" class="px-3 py-1.5 bg-bisu-blue text-white hover:bg-bisu-blue-dark rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-paper-plane mr-1.5 text-xs"></i> Forward</button>
+                </div>
+            </div>
+            
+            <div class="xl:hidden flex items-center justify-center gap-1.5 text-slate-400 text-xs py-2 px-3 bg-slate-50 border-b border-slate-100 font-medium print:hidden">
+                <i class="fa-solid fa-right-left animate-pulse text-bisu-blue"></i>
+                <span>Swipe horizontally to view full table details</span>
+            </div>
+
+            <div class="p-4 overflow-x-auto custom-scrollbar">
+                <table class="w-full text-xs text-center text-slate-700 border-collapse">
+                    <thead class="text-xs font-bold text-slate-800 uppercase bg-slate-100">
+                        <tr>
+                            <th rowspan="2" class="px-3.5 py-3 border border-slate-200 align-middle col-office">Offices</th>
+                            <th rowspan="2" class="px-2.5 py-3 border border-slate-200 align-middle">Customers (f)</th>
+                            <th colspan="2" class="px-3 py-2 border border-slate-200">Gender</th>
+                            <th colspan="3" class="px-3 py-2 border border-slate-200">Client Type</th>
+                            <th colspan="4" class="px-3 py-2 border border-slate-200">CC1 (Awareness)</th>
+                            <th colspan="5" class="px-3 py-2 border border-slate-200">CC2 (Visibility)</th>
+                            <th colspan="3" class="px-3 py-2 border border-slate-200">CC3 (Helpfulness)</th>
+                        </tr>
+                        <tr>
+                            <th class="px-2.5 py-2 border border-slate-200">M</th>
+                            <th class="px-2.5 py-2 border border-slate-200">F</th>
+                            <th class="px-2.5 py-2 border border-slate-200">Citizen</th>
+                            <th class="px-2.5 py-2 border border-slate-200">Business</th>
+                            <th class="px-2.5 py-2 border border-slate-200 text-[10px]">Government</th>
+                            <th class="px-1.5 py-2 border border-slate-200 whitespace-nowrap">CC 1-1</th>
+                            <th class="px-1.5 py-2 border border-slate-200 whitespace-nowrap">CC 1-2</th>
+                            <th class="px-1.5 py-2 border border-slate-200 whitespace-nowrap">CC 1-3</th>
+                            <th class="px-1.5 py-2 border border-slate-200 whitespace-nowrap">CC 1-4</th>
+                            <th class="px-1.5 py-2 border border-slate-200 whitespace-nowrap">CC 2-1</th>
+                            <th class="px-1.5 py-2 border border-slate-200 whitespace-nowrap">CC 2-2</th>
+                            <th class="px-1.5 py-2 border border-slate-200 whitespace-nowrap">CC 2-3</th>
+                            <th class="px-1.5 py-2 border border-slate-200 whitespace-nowrap">CC 2-4</th>
+                            <th class="px-1.5 py-2 border border-slate-200 whitespace-nowrap">CC 2-5</th>
+                            <th class="px-1.5 py-2 border border-slate-200 whitespace-nowrap">CC 3-1</th>
+                            <th class="px-1.5 py-2 border border-slate-200 whitespace-nowrap">CC 3-2</th>
+                            <th class="px-1.5 py-2 border border-slate-200 whitespace-nowrap">CC 3-3</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cc-table-body">
+                        <tr><td colspan="20" class="p-0 border"><div class="sticky left-0 px-6 py-6 text-slate-400 bg-white">Loading data...</div></td></tr>
+                    </tbody>
+                    <tfoot id="cc-table-foot" class="font-bold bg-slate-50">
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Monthly Report Card Section -->
+        <div id="section-table-b" class="bg-white rounded-2xl shadow-2xs border border-slate-200 overflow-hidden mb-7">
+            <div class="bg-slate-50/80 px-6 py-4 border-b border-slate-200 flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">
+                <div class="flex items-center space-x-3 shrink-0">
+                    <div class="w-9 h-9 bg-amber-100 text-amber-700 rounded-xl flex items-center justify-center text-base font-black shrink-0 print:hidden"><i class="fa-solid fa-star"></i></div>
+                    <div>
+                        <h3 class="font-extrabold text-base text-slate-900 tracking-tight">B. CSF Monthly Rating</h3>
+                        <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Service Assessment Metrics across 8 Dimensions</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
+                    <div class="text-xs font-bold text-slate-700 bg-white border border-slate-300 px-3 py-1.5 rounded-xl flex items-center print:hidden no-print">
+                        <span class="text-slate-400 mr-2 uppercase text-[10px]">Campus:</span> <span id="csf-campus" class="text-bisu-blue font-black tracking-wide">CALAPE</span>
+                    </div>
+                    <div class="flex items-center space-x-2 shrink-0">
+                        <button onclick="printSpecificTable('table-b')" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-print mr-1.5 text-slate-400"></i> Print</button>
+                        <button onclick="sendReportToService('Table B')" class="px-3 py-1.5 bg-bisu-gold text-bisu-blue hover:bg-yellow-500 rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-paper-plane mr-1.5 text-xs"></i> Forward</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="xl:hidden flex items-center justify-center gap-1.5 text-slate-400 text-xs py-2 px-3 bg-slate-50 border-b border-slate-100 font-medium print:hidden">
+                <i class="fa-solid fa-right-left animate-pulse text-amber-600"></i>
+                <span>Swipe horizontally to view full table details</span>
+            </div>
+
+            <div class="p-4 overflow-x-auto custom-scrollbar">
+                <table class="w-full text-xs text-center text-slate-700 whitespace-nowrap border-collapse">
+                    <thead id="report-table-head" class="text-xs font-bold text-slate-800 bg-slate-100 uppercase">
+                        <tr>
+                            <th class="px-3.5 py-3 border border-slate-200 col-office">Offices</th>
+                            <th class="px-3.5 py-3 border border-slate-200">Customers (f)</th>
+                            <th class="px-3.5 py-3 border border-slate-200">Responsiveness</th>
+                            <th class="px-3.5 py-3 border border-slate-200">Reliability</th>
+                            <th class="px-3.5 py-3 border border-slate-200">Access & Facilities</th>
+                            <th class="px-3.5 py-3 border border-slate-200">Communication</th>
+                            <th class="px-3.5 py-3 border border-slate-200">Costs</th>
+                            <th class="px-3.5 py-3 border border-slate-200">Integrity</th>
+                            <th class="px-3.5 py-3 border border-slate-200">Assurance</th>
+                            <th class="px-3.5 py-3 border border-slate-200">Outcome</th>
+                            <th class="px-3.5 py-3 border border-slate-200 bg-blue-50 font-black text-bisu-blue">Mean Rating</th>
+                            <th scope="col" class="px-3.5 py-3 border border-slate-200 text-center">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-table-body">
+                        <tr><td colspan="13" class="p-0 border"><div class="sticky left-0 px-6 py-6 text-slate-400 italic bg-white">No data retrieved yet.</div></td></tr>
+                    </tbody>
+                    <tfoot id="report-table-foot" class="font-bold bg-slate-50">
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- CSF Monthly Commendations & Suggestions Section -->
+        <div id="section-table-c" class="bg-white rounded-2xl shadow-2xs border border-slate-200 overflow-hidden mb-7">
+            <div class="bg-slate-50/80 px-6 py-4 border-b border-slate-200 flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">
+                <div class="flex items-center space-x-3 shrink-0">
+                    <div class="w-9 h-9 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center text-base font-black shrink-0 print:hidden"><i class="fa-solid fa-comments"></i></div>
+                    <div>
+                        <h3 class="font-extrabold text-base text-slate-900 tracking-tight">C. CSF Commendations and Suggestions</h3>
+                        <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Qualitative Feedback & Action Plans</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
+                    <button onclick="printSpecificTable('table-c')" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-print mr-1.5 text-slate-400"></i> Print</button>
+                    <button onclick="sendReportToService('Table C')" class="px-3 py-1.5 bg-bisu-blue text-white hover:bg-bisu-blue-dark rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-paper-plane mr-1.5 text-xs"></i> Forward</button>
+                </div>
+            </div>
+
+            <div class="xl:hidden flex items-center justify-center gap-1.5 text-slate-400 text-xs py-2 px-3 bg-slate-50 border-b border-slate-100 font-medium print:hidden">
+                <i class="fa-solid fa-right-left animate-pulse text-emerald-600"></i>
+                <span>Swipe horizontally to view full table details</span>
+            </div>
+
+            <div class="p-4 overflow-x-auto custom-scrollbar">
+                <table class="w-full text-xs text-center text-slate-700 border-collapse">
+                    <thead class="text-xs font-bold text-slate-800 uppercase bg-slate-100">
+                        <tr>
+                            <th rowspan="2" class="px-3.5 py-3 border border-slate-200 align-middle col-office">Office</th>
+                            <th rowspan="2" class="px-3.5 py-3 border border-slate-200 align-middle">Commendations</th>
+                            <th rowspan="2" class="px-3.5 py-3 border border-slate-200 align-middle">Detail of Suggestions</th>
+                            <th rowspan="2" class="px-3.5 py-3 border border-slate-200 align-middle">Root Cause</th>
+                            <th rowspan="2" class="px-3.5 py-3 border border-slate-200 align-middle">Action Plan</th>
+                            <th rowspan="2" class="px-3.5 py-3 border border-slate-200 align-middle">Target Date</th>
+                            <th colspan="3" class="px-3 py-2 border border-slate-200">Implementation Status</th>
+                        </tr>
+                        <tr>
+                            <th class="px-2.5 py-2 border border-slate-200 text-emerald-700">Implemented</th>
+                            <th class="px-2.5 py-2 border border-slate-200 text-amber-700">On-going / Open</th>
+                            <th class="px-2.5 py-2 border border-slate-200 text-red-700">Not Implemented</th>
+                        </tr>
+                    </thead>
+                    <tbody id="commendations-table-body">
+                        <tr><td colspan="10" class="p-0 border"><div class="sticky left-0 px-6 py-6 text-slate-400 bg-white">Loading data...</div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Submissions Tracking Verification Log -->
+        <div id="section-log" class="bg-white rounded-2xl shadow-2xs border border-slate-200 overflow-hidden print:hidden">
+            <div class="bg-slate-50/80 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-clock-rotate-left text-slate-500 text-sm"></i>
+                    <h3 class="font-extrabold text-base text-slate-900">Recent Customer Submissions Log</h3>
+                </div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Verification Log</span>
+            </div>
+
+            <div class="xl:hidden flex items-center justify-center gap-1.5 text-slate-400 text-xs py-2 px-3 bg-slate-50 border-b border-slate-100 font-medium print:hidden">
+                <i class="fa-solid fa-right-left animate-pulse text-slate-500"></i>
+                <span>Swipe horizontally to view full log details</span>
+            </div>
+
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-xs text-left text-slate-700">
+                    <thead class="text-xs font-bold text-slate-800 uppercase bg-slate-100/80 border-b border-slate-200">
+                        <tr>
+                            <th scope="col" class="px-4 py-3.5 whitespace-nowrap">Timestamp</th>
+                            <th scope="col" class="px-4 py-3.5 whitespace-nowrap">Office Visited</th>
+                            <th scope="col" class="px-4 py-3.5 text-center whitespace-nowrap">Client Type</th>
+                            <th scope="col" class="px-4 py-3.5 text-center whitespace-nowrap">Feedback Type</th>
+                            <th scope="col" class="px-4 py-3.5 text-center whitespace-nowrap">Rating Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-table-body">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Print Footer (Sign-offs) - Visible ONLY during print) -->
+        <div id="print-footer" class="hidden print:block mt-10 w-full mx-auto font-sans text-xs">
+            <div class="grid grid-cols-2 gap-x-12 gap-y-8 mb-8 w-full px-4">
+                <div class="space-y-1">
+                    <p class="font-semibold text-slate-800">Prepared by:</p>
+                    <div class="pt-8 border-b border-slate-400 w-full text-center">
+                        <span class="text-[10px] text-slate-500 font-normal italic uppercase tracking-tighter">Name & Signature of Chairperson, Customer Satisfaction Assessment Team</span>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <p class="font-semibold text-slate-800">Verified by:</p>
+                    <div class="pt-8 border-b border-slate-400 w-full text-center">
+                        <span class="text-[10px] text-slate-500 font-normal italic uppercase tracking-tighter">Name & Signature of Campus Quality Assurance Director</span>
+                    </div>
+                </div>
+
+                <div class="space-y-1 col-span-2 max-w-sm mx-auto mt-4 text-center">
+                    <p class="font-semibold text-left text-slate-800">Approved by:</p>
+                    <div class="pt-8 border-b border-slate-400 w-full">
+                        <span class="text-[10px] text-slate-500 font-normal italic uppercase tracking-tighter">Name & Signature of Campus Director</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-end pt-4 text-[10px] text-slate-500 font-sans mt-8 px-2 border-t border-slate-300">
+                <div>Document Code: F-AQA-CSF-001 | Rev. 3 | 09/09/25</div>
+                <div class="font-semibold text-slate-600">Bohol Island State University &bull; Quality Management System</div>
+            </div>
+        </div>
+
+    </div>
+</section>
+

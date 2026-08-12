@@ -1,0 +1,284 @@
+<!-- VIEW: Feedback Form -->
+<section id="view-feedback" class="space-y-3 animate-slide-up w-full py-1 flex flex-col lg:flex-grow">
+    <!-- QR Location Banner (Visible when accessed via Office QR code link) -->
+    <div id="qr-office-banner" class="hidden bg-gradient-to-r from-bisu-blue via-[#180058] to-bisu-blue-dark text-white p-3 sm:p-3.5 rounded-2xl shadow-sm border border-white/10 flex items-center justify-between animate-fade-in">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
+                <i class="fa-solid fa-location-dot text-bisu-gold text-base"></i>
+            </div>
+            <div>
+                <span class="text-[10px] font-black uppercase tracking-wider text-blue-200 block">Location Station</span>
+                <h3 id="qr-banner-office-name" class="text-sm sm:text-base font-extrabold text-white leading-tight">All Offices</h3>
+                <p id="qr-banner-station-name" class="text-xs text-blue-100/90 font-medium hidden">Station: Counter 1</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button" id="qr-banner-file-complaint-btn" class="inline-flex items-center gap-1.5 text-xs bg-red-600 hover:bg-red-700 text-white font-black px-3 py-1.5 rounded-xl border border-red-400/80 shadow-xs hover:scale-105 transition cursor-pointer">
+                <i class="fa-solid fa-triangle-exclamation text-bisu-gold text-xs"></i>
+                <span>File Complaint</span>
+            </button>
+            <div class="hidden md:flex items-center gap-1.5 text-xs bg-white/10 px-3 py-1.5 rounded-full border border-white/15 text-blue-100 font-semibold">
+                <i class="fa-solid fa-qrcode text-bisu-gold"></i> Direct QR Station
+            </div>
+        </div>
+    </div>
+
+    <!-- Title and Clock Header (sitting directly on page background) -->
+    <div class="flex flex-col md:flex-row justify-between md:items-center mb-2 pb-1.5 border-b border-slate-200/80">
+        <h2 class="text-xl md:text-2xl font-extrabold text-bisu-blue flex items-center">
+            <i class="fa-solid fa-clipboard-list mr-2 text-bisu-blue"></i>
+            <span id="t-fb-title">Feedback Form</span>
+        </h2>
+        <div class="text-xs text-black font-bold mt-2 md:mt-0 flex items-center bg-white/85 py-1 px-3 rounded-full border border-slate-200 shadow-sm">
+            <i class="fa-regular fa-clock mr-1.5 text-slate-500"></i>
+            <span id="current-datetime"></span>
+        </div>
+    </div>
+
+    <form id="feedback-form" class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch lg:flex-grow">
+        
+        <!-- COLUMN 1 PART A: Basic Info (lg:col-span-3) -->
+        <div class="lg:col-span-3 flex flex-col justify-start py-1 px-1 lg:col-start-1 lg:row-start-1 order-1 lg:justify-evenly">
+            <div class="space-y-3">
+                <!-- Office Visited -->
+                <div>
+                    <label id="t-fb-office" class="block mb-1 text-[13px] font-bold text-slate-700">Office Visited <span class="text-red-500">*</span></label>
+                    <select id="office-visited" required class="bg-gray-50 border border-gray-300 text-black font-semibold text-[13px] rounded-lg focus:ring-bisu-blue focus:border-bisu-blue block w-full py-2.5 px-3 shadow-xs transition-all duration-200 cursor-pointer">
+                        <option value="" disabled selected id="t-sel-office">Select Office</option>
+                        <!-- Rendered dynamically via JS -->
+                    </select>
+                </div>
+
+                <!-- Service Availed -->
+                <div>
+                    <label id="t-fb-service" class="block mb-1 text-[13px] font-bold text-slate-700">Service Availed <span class="text-red-500">*</span></label>
+                    <select id="service-availed-select" required class="bg-gray-50 border border-gray-300 text-black font-semibold text-[13px] rounded-lg focus:ring-bisu-blue focus:border-bisu-blue block w-full py-2.5 px-3 shadow-xs transition-all duration-200 cursor-pointer">
+                        <option value="" disabled selected id="t-sel-service">Select Service</option>
+                    </select>
+                    <div id="custom-service-container" class="hidden mt-2 animate-fade-in">
+                        <label class="block mb-1 text-[11.5px] font-bold text-slate-700">Please specify your service <span class="text-red-500">*</span></label>
+                        <input type="text" id="service-availed-custom" placeholder="e.g., Thesis support" class="bg-gray-50 border border-gray-300 text-black font-semibold text-[13.5px] rounded-lg focus:ring-bisu-blue focus:border-bisu-blue block w-full py-2.5 px-3 shadow-xs transition-all duration-200">
+                    </div>
+                </div>
+
+                <!-- Client Type -->
+                <div>
+                    <label id="t-fb-type" class="block mb-1 text-[13px] font-bold text-slate-700">Client Type <span class="text-red-500">*</span></label>
+                    <select id="client-type" required class="bg-gray-50 border border-gray-300 text-black font-semibold text-[13px] rounded-lg focus:ring-bisu-blue focus:border-bisu-blue block w-full py-2.5 px-3 shadow-xs transition-all duration-200 cursor-pointer">
+                        <option value="" selected id="t-sel-type">Select Type</option>
+                        <option value="Student" id="t-type-stu">Student</option>
+                        <option value="Faculty" id="t-type-fac">Faculty</option>
+                        <option value="Citizen" id="t-type-cit">Citizen</option>
+                        <option value="Business" id="t-type-bus">Business</option>
+                        <option value="Government" id="t-type-gov">Government</option>
+                    </select>
+                </div>
+
+                <!-- Gender & Region of Residence paired side-by-side -->
+                <div class="grid grid-cols-2 gap-2 items-start">
+                    <div>
+                        <label id="t-fb-sex" class="block mb-1 text-[13px] font-bold text-slate-700 leading-tight min-h-[2.1rem]">Gender <span class="text-[10px] text-slate-400 font-normal italic">(Opt)</span></label>
+                        <select id="client-sex" class="bg-gray-50 border border-gray-300 text-black font-semibold text-[13px] rounded-lg focus:ring-bisu-blue focus:border-bisu-blue block w-full py-2.5 px-2.5 shadow-xs transition-all duration-200 cursor-pointer">
+                            <option value="" disabled selected id="t-sel-sex">Select</option>
+                            <option value="Male" id="t-sex-m">Male</option>
+                            <option value="Female" id="t-sex-f">Female</option>
+                            <option value="Prefer not to say" id="t-sex-o">Prefer not to say</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label id="t-fb-region" class="block mb-1 text-[13px] font-bold text-slate-700 leading-tight min-h-[2.1rem]">Region of Residence <span class="text-[10px] text-slate-400 font-normal italic">(Opt)</span></label>
+                        <select id="client-region" class="bg-gray-50 border border-gray-300 text-black font-semibold text-[13px] rounded-lg focus:ring-bisu-blue focus:border-bisu-blue block w-full py-2.5 px-2.5 shadow-xs transition-all duration-200 cursor-pointer">
+                            <option value="" disabled selected id="t-sel-region">Select Region</option>
+                            <option value="NCR" id="t-reg-ncr">National Capital Region (NCR)</option>
+                            <option value="CAR" id="t-reg-car">Cordillera Administrative Region (CAR)</option>
+                            <option value="Region I" id="t-reg-1">Region I (Ilocos Region)</option>
+                            <option value="Region II" id="t-reg-2">Region II (Cagayan Valley)</option>
+                            <option value="Region III" id="t-reg-3">Region III (Central Luzon)</option>
+                            <option value="Region IV-A" id="t-reg-4a">Region IV-A (CALABARZON)</option>
+                            <option value="MIMAROPA" id="t-reg-mimaropa">MIMAROPA Region</option>
+                            <option value="Region V" id="t-reg-5">Region V (Bicol Region)</option>
+                            <option value="Region VI" id="t-reg-6">Region VI (Western Visayas)</option>
+                            <option value="Region VII" id="t-reg-7">Region VII (Central Visayas)</option>
+                            <option value="Region VIII" id="t-reg-8">Region VIII (Eastern Visayas)</option>
+                            <option value="Region IX" id="t-reg-9">Region IX (Zamboanga Peninsula)</option>
+                            <option value="Region X" id="t-reg-10">Region X (Northern Mindanao)</option>
+                            <option value="Region XI" id="t-reg-11">Region XI (Davao Region)</option>
+                            <option value="Region XII" id="t-reg-12">Region XII (SOCCSKSARGEN)</option>
+                            <option value="Region XIII" id="t-reg-13">Region XIII (Caraga)</option>
+                            <option value="BARMM" id="t-reg-barmm">BARMM (Bangsamoro Autonomous Region in Muslim Mindanao)</option>
+                            <option value="Outside Philippines" id="t-reg-intl">Outside the Philippines</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Served By -->
+                <div>
+                    <label id="t-fb-served" class="block mb-1 text-[13px] font-bold text-slate-700">Served By <span class="text-[10px] text-slate-400 font-normal italic">(Opt)</span></label>
+                    <input type="text" id="served-by" class="bg-gray-50 border border-gray-300 text-black font-semibold text-[13px] rounded-lg focus:ring-bisu-blue focus:border-bisu-blue block w-full py-2.5 px-3 shadow-xs transition-all duration-200" placeholder="Name of staff/employee who served you">
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMN 1 PART B: Commendations, Suggestions & Submit Actions (lg:col-span-3) -->
+        <div class="lg:col-span-3 flex flex-col justify-between py-1 px-1 lg:col-start-1 lg:row-start-2 order-4 lg:order-none">
+            <div class="space-y-2.5">
+                <!-- Commendations -->
+                <div>
+                    <label id="t-fb-commend" class="block mb-1 text-[13px] font-bold text-slate-700">Commendations <span class="text-[10px] text-slate-400 font-normal italic">(Optional)</span></label>
+                    <textarea id="commendations" rows="2" class="block py-2 px-3 w-full text-[13px] text-black font-semibold bg-gray-50 rounded-lg border border-gray-300 focus:ring-bisu-blue focus:border-bisu-blue resize-none shadow-xs placeholder-gray-400 leading-relaxed" placeholder="Any praise for our staff?"></textarea>
+                </div>
+
+                <!-- Suggestions -->
+                <div>
+                    <label id="t-fb-suggest" class="block mb-1 text-[13px] font-bold text-slate-700">Suggestions <span class="text-[10px] text-slate-400 font-normal italic">(Optional)</span></label>
+                    <textarea id="suggestions" rows="2" class="block py-2 px-3 w-full text-[13px] text-black font-semibold bg-gray-50 rounded-lg border border-gray-300 focus:ring-bisu-blue focus:border-bisu-blue resize-none shadow-xs placeholder-gray-400 leading-relaxed" placeholder="How can we improve?"></textarea>
+                </div>
+
+            </div>
+
+            <!-- Submit and Secondary Actions -->
+            <div class="pt-3 border-t border-slate-100 space-y-2 mt-3">
+                <button type="submit" id="submit-feedback-btn" class="w-full bg-white hover:bg-slate-50 text-bisu-blue border-2 border-bisu-blue font-bold py-4 px-4 rounded-lg transition duration-300 shadow-md hover:shadow-lg flex items-center justify-center space-x-2 group cursor-pointer text-base">
+                    <span>Submit My Feedback</span>
+                    <i class="fa-solid fa-paper-plane group-hover:translate-x-1 group-hover:-translate-y-0.5 transition-transform text-sm"></i>
+                </button>
+                <div class="flex items-center justify-between pt-2">
+                    <button type="button" id="clear-feedback-btn" class="text-slate-500 hover:text-slate-700 font-bold flex items-center space-x-1 text-xs transition cursor-pointer">
+                        <i class="fa-solid fa-broom text-xs"></i>
+                        <span>Clear</span>
+                    </button>
+                    <button type="button" id="toggle-complaint-btn" class="text-bisu-red hover:text-red-700 font-black flex items-center space-x-1.5 underline hover:scale-105 transition duration-150 cursor-pointer text-[14px] md:text-[15px]">
+                        <i class="fa-solid fa-triangle-exclamation text-sm md:text-base"></i>
+                        <span>File Complaint</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMN 2: Citizen's Charter (lg:col-span-4) -->
+        <div class="lg:col-span-4 flex flex-col justify-between py-1 px-1 lg:col-start-4 lg:row-start-1 lg:row-span-2 order-2 lg:order-none">
+            <!-- CC Info Box -->
+            <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100 flex items-start space-x-2.5 shrink-0 mb-2">
+                <i class="fa-solid fa-circle-info text-blue-600 text-[14px] mt-0.5 flex-shrink-0"></i>
+                <div>
+                    <h3 class="font-extrabold text-slate-900 text-[13.5px]" id="t-cc-title">Citizen's Charter (CC)</h3>
+                    <p class="text-[12px] text-slate-600 font-medium leading-relaxed mt-0.5" id="t-cc-desc">The Citizen's Charter is an official document that reflects the services of a government agency/office including its requirements, fees, and processing time among others.</p>
+                </div>
+            </div>
+
+            <!-- CC1 Question -->
+            <div class="space-y-2 flex-1 flex flex-col justify-center my-1.5">
+                <label class="block text-[13.5px] font-bold text-slate-800 leading-snug" id="t-cc1-label">CC1. Which of the following best describes your awareness of a CC? <span class="text-red-500">*</span></label>
+                <div class="flex flex-col gap-2 flex-1 justify-around">
+                    <label class="cc-option flex items-start py-2 px-3 bg-white border border-slate-200/90 rounded-xl cursor-pointer hover:border-bisu-blue hover:bg-blue-50/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 group">
+                        <input type="radio" name="cc1" value="1" required class="w-4 h-4 text-bisu-blue focus:ring-bisu-blue accent-bisu-blue mt-0.5 shrink-0 cursor-pointer">
+                        <span class="ml-2.5 text-[13px] text-slate-800 font-semibold group-hover:text-black leading-snug" id="t-cc1-opt1">1. I know what a CC is and I saw this office's CC.</span>
+                    </label>
+                    <label class="cc-option flex items-start py-2 px-3 bg-white border border-slate-200/90 rounded-xl cursor-pointer hover:border-bisu-blue hover:bg-blue-50/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 group">
+                        <input type="radio" name="cc1" value="2" class="w-4 h-4 text-bisu-blue focus:ring-bisu-blue accent-bisu-blue mt-0.5 shrink-0 cursor-pointer">
+                        <span class="ml-2.5 text-[13px] text-slate-800 font-semibold group-hover:text-black leading-snug" id="t-cc1-opt2">2. I know what a CC is but I did not see this office's CC.</span>
+                    </label>
+                    <label class="cc-option flex items-start py-2 px-3 bg-white border border-slate-200/90 rounded-xl cursor-pointer hover:border-bisu-blue hover:bg-blue-50/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 group">
+                        <input type="radio" name="cc1" value="3" class="w-4 h-4 text-bisu-blue focus:ring-bisu-blue accent-bisu-blue mt-0.5 shrink-0 cursor-pointer">
+                        <span class="ml-2.5 text-[13px] text-slate-800 font-semibold group-hover:text-black leading-snug" id="t-cc1-opt3">3. I learned of the CC only when I saw this office's CC.</span>
+                    </label>
+                    <label class="cc-option flex items-start py-2 px-3 bg-white border border-slate-200/90 rounded-xl cursor-pointer hover:border-bisu-blue hover:bg-blue-50/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 group">
+                        <input type="radio" name="cc1" value="4" class="w-4 h-4 text-bisu-blue focus:ring-bisu-blue accent-bisu-blue mt-0.5 shrink-0 cursor-pointer">
+                        <span class="ml-2.5 text-[13px] text-slate-800 font-semibold group-hover:text-black leading-snug" id="t-cc1-opt4">4. I do not know what a CC is and I did not see one in this office.</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- CC2 & CC3 Stacked vertically -->
+            <div id="cc-details-container" class="flex-1 flex flex-col justify-between space-y-3 pt-3 border-t border-slate-200/80 my-1">
+                <!-- CC2 Question -->
+                <div class="space-y-2 flex-1 flex flex-col justify-center">
+                    <label class="block text-[13.5px] font-bold text-slate-800 leading-snug" id="t-cc2-label">CC2. Would you say that the CC of this office was <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>? <span class="text-red-500">*</span></label>
+                    <div class="flex flex-col gap-1.5 flex-1 justify-around">
+                        <label class="cc-option flex items-center py-2 px-3 bg-white border border-slate-200/90 rounded-xl cursor-pointer hover:border-bisu-blue hover:bg-blue-50/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 group">
+                            <input type="radio" name="cc2" value="1" required class="w-4 h-4 text-bisu-blue focus:ring-bisu-blue accent-bisu-blue shrink-0 cursor-pointer">
+                            <span class="ml-2.5 text-[13px] text-slate-800 font-semibold group-hover:text-black leading-snug" id="t-cc2-opt1">1. Easy to see</span>
+                        </label>
+                        <label class="cc-option flex items-center py-2 px-3 bg-white border border-slate-200/90 rounded-xl cursor-pointer hover:border-bisu-blue hover:bg-blue-50/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 group">
+                            <input type="radio" name="cc2" value="2" class="w-4 h-4 text-bisu-blue focus:ring-bisu-blue accent-bisu-blue shrink-0 cursor-pointer">
+                            <span class="ml-2.5 text-[13px] text-slate-800 font-semibold group-hover:text-black leading-snug" id="t-cc2-opt2">2. Somewhat easy to see</span>
+                        </label>
+                        <label class="cc-option flex items-center py-2 px-3 bg-white border border-slate-200/90 rounded-xl cursor-pointer hover:border-bisu-blue hover:bg-blue-50/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 group">
+                            <input type="radio" name="cc2" value="3" class="w-4 h-4 text-bisu-blue focus:ring-bisu-blue accent-bisu-blue shrink-0 cursor-pointer">
+                            <span class="ml-2.5 text-[13px] text-slate-800 font-semibold group-hover:text-black leading-snug" id="t-cc2-opt3">3. Difficult to see</span>
+                        </label>
+                        <label class="cc-option flex items-center py-2 px-3 bg-white border border-slate-200/90 rounded-xl cursor-pointer hover:border-bisu-blue hover:bg-blue-50/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 group">
+                            <input type="radio" name="cc2" value="4" class="w-4 h-4 text-bisu-blue focus:ring-bisu-blue accent-bisu-blue shrink-0 cursor-pointer">
+                            <span class="ml-2.5 text-[13px] text-slate-800 font-semibold group-hover:text-black leading-snug" id="t-cc2-opt4">4. Not visible at all</span>
+                        </label>
+                        <label class="cc-option flex items-center py-2 px-3 bg-white border border-slate-200/90 rounded-xl cursor-pointer hover:border-bisu-blue hover:bg-blue-50/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 group">
+                            <input type="radio" name="cc2" value="5" class="w-4 h-4 text-bisu-blue focus:ring-bisu-blue accent-bisu-blue shrink-0 cursor-pointer">
+                            <span class="ml-2.5 text-[13px] text-slate-800 font-semibold group-hover:text-black leading-snug" id="t-cc2-opt5">5. N/A</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- CC3 Question -->
+                <div class="space-y-2 flex-1 flex flex-col justify-center">
+                    <label class="block text-[13.5px] font-bold text-slate-800 leading-snug" id="t-cc3-label">CC3. How much did the CC help you in your transaction? <span class="text-red-500">*</span></label>
+                    <div class="flex flex-col gap-1.5 flex-1 justify-around">
+                        <label class="cc-option flex items-center py-2 px-3 bg-white border border-slate-200/90 rounded-xl cursor-pointer hover:border-bisu-blue hover:bg-blue-50/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 group">
+                            <input type="radio" name="cc3" value="1" required class="w-4 h-4 text-bisu-blue focus:ring-bisu-blue accent-bisu-blue shrink-0 cursor-pointer">
+                            <span class="ml-2.5 text-[13px] text-slate-800 font-semibold group-hover:text-black leading-snug" id="t-cc3-opt1">Helped very much</span>
+                        </label>
+                        <label class="cc-option flex items-center py-2 px-3 bg-white border border-slate-200/90 rounded-xl cursor-pointer hover:border-bisu-blue hover:bg-blue-50/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 group">
+                            <input type="radio" name="cc3" value="2" class="w-4 h-4 text-bisu-blue focus:ring-bisu-blue accent-bisu-blue shrink-0 cursor-pointer">
+                            <span class="ml-2.5 text-[13px] text-slate-800 font-semibold group-hover:text-black leading-snug" id="t-cc3-opt2">Somewhat helped</span>
+                        </label>
+                        <label class="cc-option flex items-center py-2 px-3 bg-white border border-slate-200/90 rounded-xl cursor-pointer hover:border-bisu-blue hover:bg-blue-50/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 group">
+                            <input type="radio" name="cc3" value="3" class="w-4 h-4 text-bisu-blue focus:ring-bisu-blue accent-bisu-blue shrink-0 cursor-pointer">
+                            <span class="ml-2.5 text-[13px] text-slate-800 font-semibold group-hover:text-black leading-snug" id="t-cc3-opt3">Did not help</span>
+                        </label>
+                        <label class="cc-option flex items-center py-2 px-3 bg-white border border-slate-200/90 rounded-xl cursor-pointer hover:border-bisu-blue hover:bg-blue-50/40 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 group">
+                            <input type="radio" name="cc3" value="4" class="w-4 h-4 text-bisu-blue focus:ring-bisu-blue accent-bisu-blue shrink-0 cursor-pointer">
+                            <span class="ml-2.5 text-[13px] text-slate-800 font-semibold group-hover:text-black leading-snug" id="t-cc3-opt4">N/A</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMN 3: Rating Scale Legend & 8 Dimensions (lg:col-span-5) -->
+        <div class="lg:col-span-5 flex flex-col justify-start py-1 px-1 lg:col-start-8 lg:row-start-1 lg:row-span-2 order-3 lg:order-none">
+            <!-- Rating Scale Legend Header -->
+            <div class="flex flex-col gap-1 text-xs font-bold text-black bg-slate-50 p-2.5 rounded-lg border border-slate-200 shadow-xs mb-2">
+                <span class="font-extrabold text-black uppercase tracking-wider text-[13px] flex items-center" id="t-fb-inst-strong">
+                    <i class="fa-solid fa-circle-info text-blue-500 mr-1.5"></i> Rating Scale
+                </span>
+                <div class="flex flex-wrap items-center gap-x-3.5 gap-y-2 pt-1.5 border-t border-slate-200/60 mt-1">
+                    <span class="flex items-center">
+                        <span class="w-[18px] h-[18px] flex items-center justify-center rounded-full bg-bisu-gold text-white font-bold mr-1.5 text-[10px]">5</span> 
+                        <span id="t-fb-vs1" class="text-xs text-slate-700 font-bold">Very Satisfied</span>
+                    </span>
+                    <span class="flex items-center">
+                        <span class="w-[18px] h-[18px] flex items-center justify-center rounded-full bg-bisu-blue text-white font-bold mr-1.5 text-[10px]">4</span> 
+                        <span id="t-fb-sat" class="text-xs text-slate-700 font-bold">Satisfied</span>
+                    </span>
+                    <span class="flex items-center">
+                        <span class="w-[18px] h-[18px] flex items-center justify-center rounded-full bg-slate-400 text-white font-bold mr-1.5 text-[10px]">3</span> 
+                        <span id="t-fb-neu" class="text-xs text-slate-700 font-bold">Neutral</span>
+                    </span>
+                    <span class="flex items-center">
+                        <span class="w-[18px] h-[18px] flex items-center justify-center rounded-full bg-orange-600 text-white font-bold mr-1.5 text-[10px]">2</span> 
+                        <span id="t-fb-dis" class="text-xs text-slate-700 font-bold">Dissatisfied</span>
+                    </span>
+                    <span class="flex items-center">
+                        <span class="w-[18px] h-[18px] flex items-center justify-center rounded-full bg-bisu-red text-white font-bold mr-1.5 text-[10px]">1</span> 
+                        <span id="t-fb-vd1" class="text-xs text-slate-700 font-bold">Very Dissatisfied</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- 8 Dimensions List -->
+            <div class="space-y-2.5 md:space-y-3 lg:space-y-2.5 xl:space-y-3 flex-grow flex flex-col justify-between" id="dimensions-container">
+                <!-- Rendered dynamically via JS -->
+            </div>
+        </div>
+
+    </form>
+</section>

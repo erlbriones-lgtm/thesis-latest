@@ -1,0 +1,139 @@
+/* Base & Body Settings */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f8fafc;
+    background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 0, 124, 0.06), transparent),
+        radial-gradient(#e2e8f0 1px, transparent 1px);
+    background-size: 100% 100%, 24px 24px;
+    color: #1e293b;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Form Controls */
+select, input[type="text"], input[type="email"], input[type="password"], input[type="date"], textarea {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.15s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+select:focus, input:focus, textarea:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34, 0, 124, 0.05), 0 0 0 3px rgba(34, 0, 124, 0.1);
+}
+
+/* Base Buttons */
+button {
+    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+button:active {
+    transform: scale(0.97) !important;
+}
+
+/* Section Visibility */
+.section-hidden {
+    display: none !important;
+}
+
+/* Admin layout: sidebar pinned left; only dashboard content scrolls */
+@media (min-width: 1280px) {
+    body.admin-layout {
+        height: 100dvh;
+        max-height: 100dvh;
+        overflow: hidden;
+    }
+
+    body.admin-layout > main {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    body.admin-layout #view-admin:not(.section-hidden) {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+}
+
+body.admin-layout > footer {
+    display: none;
+}
+
+/* Desktop: dock sidebar flush to the left edge of the viewport */
+@media (min-width: 1280px) {
+    body.admin-layout > main {
+        padding-left: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    body.admin-layout #admin-sidebar {
+        border-radius: 0;
+        align-self: stretch;
+    }
+}
+
+@media print {
+    body.admin-layout {
+        height: auto;
+        max-height: none;
+        overflow: visible;
+    }
+
+    body.admin-layout > main {
+        overflow: visible;
+        display: block;
+    }
+
+    body.admin-layout #admin-dashboard-scroll {
+        overflow: visible !important;
+    }
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.custom-scrollbar {
+    scrollbar-gutter: stable;
+}
+
+/* Toast Containers */
+#toast-container > div {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Responsive Utilities */
+@media (max-width: 640px) {
+    .animate-pop-in {
+        animation-duration: 0.3s;
+    }
+    .animate-slide-up {
+        animation-duration: 0.35s;
+    }
+}

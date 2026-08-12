@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BISU Calape - Feedback System</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bisu-blue': '#22007c', /* Deep Royal/Navy Blue from logo text ring */
+                        'bisu-blue-dark': '#180058', /* Darker variant for professional hovers */
+                        'bisu-gold': '#ffd500', /* Vibrant Gold from outer ring */
+                        'bisu-gold-dark': '#cca600', /* Darker gold for professional hovers */
+                        'bisu-red': '#E84A1C',   /* Orange-Red from the torch flame */
+                        'bisu-green': '#0E811B'  /* Green from the island */
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/print.css">
+
+    <!-- Export & QR Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <!-- Header / Navbar Section -->
+    <!-- #include "components/header.html" -->
+
+    <!-- Main Content Area -->
+    <main class="flex-grow w-full px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-3 sm:py-4 lg:py-5 flex flex-col">
+        
+        <!-- Application Modals & Overlays -->
+        <!-- #include "components/modals.html" -->
+
+        <!-- VIEW: Feedback Form -->
+        <!-- #include "components/feedback-form.html" -->
+
+        <!-- VIEW: Complaint Form -->
+        <!-- #include "components/complaint-form.html" -->
+
+        <!-- VIEW: Admin Dashboard -->
+        <!-- #include "components/admin-dashboard.html" -->
+
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-4 px-4 sm:px-8 border-t border-slate-800 print:hidden mt-auto">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <div>
+                <p class="font-medium text-slate-300">&copy; <span id="footer-year">2026</span> Bohol Island State University - Calape Campus. All Rights Reserved.</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">Compliant with Republic Act No. 10173 (Data Privacy Act of 2012)</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button type="button" id="footer-cookie-settings-btn" class="hover:text-bisu-gold transition font-bold flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-cookie-bite text-amber-400"></i>
+                    <span>Cookie Settings</span>
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Cookie Banner & Modal for New Users -->
+    <!-- #include "components/cookie-banner.html" -->
+
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="images/logo_base64.js"></script>
+    <script type="module" src="supabaseClient.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>

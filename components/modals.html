@@ -1,0 +1,599 @@
+<!-- Admin Login Modal (Overlay) -->
+<div id="admin-login-modal" class="fixed inset-0 z-[105] hidden items-center justify-center bg-slate-900 bg-opacity-50 backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 sm:p-6 m-4 animate-pop-in">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-lock text-bisu-blue mr-2"></i> Admin Login</h2>
+            <button type="button" id="close-login-btn" class="text-slate-400 hover:text-slate-600 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+        </div>
+        <form id="admin-login-form" class="space-y-4">
+            <div>
+                <label class="block mb-1 text-sm font-semibold text-slate-700">Email Address</label>
+                <input type="email" id="login-email" required placeholder="admin@bisu.edu.ph" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-bisu-blue focus:border-bisu-blue block w-full p-3 shadow-sm transition-all duration-200">
+            </div>
+            <div class="mb-4">
+                <label class="block mb-1 text-sm font-semibold text-slate-700">Password</label>
+                <input type="password" id="login-password" required placeholder="••••••••" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-bisu-blue focus:border-bisu-blue block w-full p-3 shadow-sm transition-all duration-200">
+            </div>
+            <button type="submit" id="submit-login-btn" class="w-full text-white bg-bisu-blue hover:bg-bisu-blue-dark focus:ring-4 focus:ring-blue-300 font-bold rounded-xl text-lg px-5 py-3 text-center transition-all duration-200 shadow-md">
+                Login to Dashboard
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Form Settings Modal (Slide-over Side Panel Drawer) -->
+<div id="admin-settings-modal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-xs flex justify-end print:hidden overflow-hidden transition-opacity">
+    <div class="w-full max-w-2xl lg:max-w-3xl xl:max-w-4xl bg-white h-full flex flex-col shadow-2xl border-l border-slate-200/80 animate-drawer-in duration-300">
+        <!-- Header Bar -->
+        <div class="bg-gradient-to-r from-bisu-blue via-[#180058] to-bisu-blue-dark text-white px-5 py-3 flex items-center justify-between shrink-0 shadow-md border-b border-white/10">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-white/10 text-bisu-gold border border-white/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
+                    <i class="fa-solid fa-sliders text-base"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-white tracking-tight leading-tight">Form Settings</h3>
+                    <p class="text-[11px] text-blue-200/90 font-medium">Customize available offices, ratings, and feedback questions</p>
+                </div>
+            </div>
+            <button type="button" id="close-settings-btn" class="bg-white/10 hover:bg-white/20 text-white transition px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 border border-white/20 cursor-pointer shadow-xs hover:text-bisu-gold">
+                <i class="fa-solid fa-xmark text-sm"></i>
+                <span>Close</span>
+            </button>
+        </div>
+        <div class="h-0.5 bg-gradient-to-r from-bisu-red via-bisu-gold to-bisu-blue shrink-0"></div>
+
+        <div class="flex-grow overflow-y-auto space-y-6 p-5 custom-scrollbar bg-slate-50/50">
+            <!-- Navigation Tabs for Settings -->
+            <div class="flex items-center space-x-2 border-b border-slate-200 pb-3">
+                <button type="button" id="tab-btn-offices" class="settings-tab-btn px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition cursor-pointer bg-bisu-blue text-white shadow-sm flex items-center">
+                    <i class="fa-solid fa-building-user mr-2"></i> Campus Offices
+                    <span id="settings-offices-count" class="ml-2 bg-white/20 px-2 py-0.5 rounded-full text-xs">0</span>
+                </button>
+                <button type="button" id="tab-btn-questions" class="settings-tab-btn px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition cursor-pointer text-slate-600 hover:bg-slate-200/60 flex items-center">
+                    <i class="fa-solid fa-clipboard-question mr-2"></i> Rating Questions
+                    <span id="settings-dims-count" class="ml-2 bg-slate-200 px-2 py-0.5 rounded-full text-xs">0</span>
+                </button>
+            </div>
+
+            <!-- Tab 1: Campus Offices Management -->
+            <div id="settings-pane-offices" class="space-y-5">
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm flex items-center">
+                                <i class="fa-solid fa-plus-circle text-bisu-blue mr-2"></i> Add New Office
+                            </h4>
+                            <p class="text-xs text-slate-500">Type an office name to make it selectable in feedback & complaint forms</p>
+                        </div>
+                        <button type="button" id="toggle-bulk-offices-btn" class="text-xs text-bisu-blue hover:underline font-semibold flex items-center gap-1 self-start sm:self-auto">
+                            <i class="fa-solid fa-code text-xs"></i> Toggle Bulk Raw Text Mode
+                        </button>
+                    </div>
+
+                    <!-- Add Office Bar -->
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="new-office-input" placeholder="e.g. Guidance Office, Supply & Property..." class="flex-grow border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-bisu-blue focus:border-bisu-blue shadow-xs bg-slate-50/50">
+                        <button type="button" id="add-office-btn" class="bg-bisu-blue hover:bg-bisu-blue-dark text-white font-bold px-4 py-2.5 rounded-xl text-sm transition shadow-xs flex items-center shrink-0 cursor-pointer">
+                            <i class="fa-solid fa-plus mr-1.5"></i> Add Office
+                        </button>
+                    </div>
+
+
+                </div>
+
+                <!-- Interactive Offices List Container -->
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <h4 class="font-bold text-slate-800 text-sm flex items-center">
+                            <i class="fa-solid fa-list-check text-slate-500 mr-2"></i> Configured Campus Offices
+                        </h4>
+                        <span class="text-xs text-slate-400 font-medium">Reorder or remove offices below</span>
+                    </div>
+
+                    <div id="interactive-offices-list" class="space-y-2 max-h-72 overflow-y-auto pr-1 custom-scrollbar">
+                        <!-- Rendered dynamically -->
+                    </div>
+
+                    <!-- Hidden Bulk Edit Textarea (Toggleable) -->
+                    <div id="bulk-offices-wrapper" class="hidden pt-3 border-t border-slate-100 space-y-2">
+                        <label class="block text-xs font-bold text-slate-600">Bulk Plain Text Mode (One office per line)</label>
+                        <textarea id="config-offices" rows="5" class="w-full border border-slate-300 rounded-xl p-3 focus:ring-bisu-blue shadow-xs bg-slate-50 font-mono text-xs"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Rating Questions Management -->
+            <div id="settings-pane-questions" class="space-y-5 hidden">
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm flex items-center">
+                                <i class="fa-solid fa-star-half-stroke text-bisu-gold mr-2"></i> Feedback Rating Dimensions
+                            </h4>
+                            <p class="text-xs text-slate-500">Configure evaluation criteria asked on the feedback form</p>
+                        </div>
+                    </div>
+                    
+                    <div id="config-dimensions-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-2">
+                        <!-- Rendered dynamically -->
+                    </div>
+                    
+                    <button type="button" id="add-dimension-btn" class="w-full bg-slate-50 hover:bg-green-50 text-slate-600 hover:text-green-700 border-2 border-dashed border-slate-300 hover:border-green-400 font-bold py-3.5 rounded-xl transition flex items-center justify-center cursor-pointer shadow-2xs text-sm">
+                        <i class="fa-solid fa-circle-plus text-base mr-2 text-green-600"></i> Add New Question Dimension
+                    </button>
+                </div>
+            </div>
+
+            <!-- Danger / Reset Zone -->
+            <div class="pt-2 border-t border-slate-200/80 flex items-center justify-between">
+                <button type="button" id="reset-settings-defaults-btn" class="text-xs text-rose-600 hover:text-rose-800 hover:underline font-bold flex items-center gap-1.5 transition cursor-pointer">
+                    <i class="fa-solid fa-rotate-left"></i> Restore Default BISU Configuration
+                </button>
+            </div>
+        </div>
+        
+        <div class="bg-white border-t border-slate-200 p-4 flex justify-end space-x-3 shrink-0 shadow-lg">
+            <button type="button" id="close-settings-btn-footer" onclick="document.getElementById('close-settings-btn').click()" class="px-5 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition cursor-pointer">Cancel</button>
+            <button type="button" id="save-settings-btn" class="px-5 py-2.5 bg-bisu-blue text-white font-bold rounded-xl hover:bg-bisu-blue-dark transition shadow-md flex items-center cursor-pointer"><i class="fa-solid fa-floppy-disk mr-2"></i> Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Accounts Modal (Slide-over Side Panel Drawer) -->
+<div id="manage-accounts-modal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-xs flex justify-end print:hidden overflow-hidden transition-opacity">
+    <div class="w-full max-w-2xl lg:max-w-3xl bg-white h-full flex flex-col shadow-2xl border-l border-slate-200/80 animate-drawer-in duration-300">
+        <!-- Header Bar -->
+        <div class="bg-gradient-to-r from-bisu-blue via-[#180058] to-bisu-blue-dark text-white px-5 py-3 flex items-center justify-between shrink-0 shadow-md border-b border-white/10">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-white/10 text-bisu-gold border border-white/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
+                    <i class="fa-solid fa-users-gear text-base"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-white tracking-tight leading-tight">Manage Office Accounts</h3>
+                    <p class="text-[11px] text-blue-200/90 font-medium">Create and authorize office-specific login credentials</p>
+                </div>
+            </div>
+            <button type="button" id="close-accounts-btn" class="bg-white/10 hover:bg-white/20 text-white transition px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 border border-white/20 cursor-pointer shadow-xs hover:text-bisu-gold">
+                <i class="fa-solid fa-xmark text-sm"></i>
+                <span>Close</span>
+            </button>
+        </div>
+        <div class="h-0.5 bg-gradient-to-r from-bisu-red via-bisu-gold to-bisu-blue shrink-0"></div>
+
+        <div class="flex-grow space-y-6 overflow-y-auto custom-scrollbar p-5 bg-slate-50/50">
+            <!-- Create Account Form -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <h4 class="font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2 flex items-center"><i class="fa-solid fa-user-plus text-bisu-gold mr-2"></i> Add / Reset Office Login</h4>
+                <form id="office-account-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Target Office</label>
+                            <select id="acc-office" required class="w-full border border-slate-300 rounded-xl p-2.5 focus:ring-bisu-blue shadow-sm bg-white text-sm">
+                                <option value="" disabled selected>Select Office</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Email <span class="text-xs text-slate-400 font-normal">(Login ID)</span></label>
+                            <input type="email" id="acc-email" required class="w-full border border-slate-300 rounded-xl p-2.5 focus:ring-bisu-blue shadow-sm bg-white text-sm" placeholder="office@bisu.edu.ph">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Password</label>
+                            <input type="password" id="acc-password" required minlength="6" class="w-full border border-slate-300 rounded-xl p-2.5 focus:ring-bisu-blue shadow-sm bg-white text-sm" placeholder="Minimum 6 characters">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" id="submit-acc-btn" class="w-full h-[42px] bg-bisu-blue text-white font-bold rounded-xl hover:bg-bisu-blue-dark transition shadow-md flex items-center justify-center cursor-pointer">
+                                Save Credentials
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- List of Accounts -->
+            <div>
+                <h4 class="font-bold text-slate-800 mb-3 flex items-center"><i class="fa-solid fa-list-check text-slate-500 mr-2"></i> Authorized Roles</h4>
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                    <table class="w-full text-sm text-left text-slate-600">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-100 border-b border-slate-200">
+                            <tr>
+                                <th class="px-4 py-3">Assigned Office</th>
+                                <th class="px-4 py-3">Email Address</th>
+                                <th class="px-4 py-3 text-right">Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accounts-table-body">
+                            <tr><td colspan="3" class="px-4 py-6 text-center text-slate-400 italic">No office accounts registered.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Recipients Modal (Slide-over Side Panel Drawer) -->
+<div id="manage-recipients-modal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-xs flex justify-end print:hidden overflow-hidden transition-opacity">
+    <div class="w-full max-w-xl lg:max-w-2xl bg-white h-full flex flex-col shadow-2xl border-l border-slate-200/80 animate-drawer-in duration-300">
+        <!-- Header Bar -->
+        <div class="bg-gradient-to-r from-bisu-blue via-[#180058] to-bisu-blue-dark text-white px-5 py-3 flex items-center justify-between shrink-0 shadow-md border-b border-white/10">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-white/10 text-bisu-gold border border-white/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
+                    <i class="fa-solid fa-envelope-circle-check text-base"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-white tracking-tight leading-tight">Email Recipients</h3>
+                    <p class="text-[11px] text-blue-200/90 font-medium">Configure notification email list for submitted feedback reports</p>
+                </div>
+            </div>
+            <button type="button" id="close-recipients-btn" class="bg-white/10 hover:bg-white/20 text-white transition px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 border border-white/20 cursor-pointer shadow-xs hover:text-bisu-gold">
+                <i class="fa-solid fa-xmark text-sm"></i>
+                <span>Close</span>
+            </button>
+        </div>
+        <div class="h-0.5 bg-gradient-to-r from-bisu-red via-bisu-gold to-bisu-blue shrink-0"></div>
+
+        <div class="flex-grow overflow-y-auto custom-scrollbar p-5 space-y-4 bg-slate-50/50" id="config-recipients-list">
+            <!-- Dynamic Rows Go Here -->
+        </div>
+        
+        <div class="bg-white border-t border-slate-200 p-4 flex items-center justify-between shrink-0 shadow-lg">
+            <button type="button" id="add-recipient-btn" class="text-xs font-extrabold text-bisu-blue hover:text-bisu-blue-dark transition flex items-center gap-1.5 cursor-pointer bg-blue-50 hover:bg-blue-100 px-3.5 py-2.5 rounded-xl border border-blue-200">
+                <i class="fa-solid fa-plus-circle"></i> Add Recipient
+            </button>
+            <button type="button" id="save-recipients-btn" class="bg-bisu-blue text-white text-xs font-bold rounded-xl px-5 py-2.5 hover:bg-bisu-blue-dark transition shadow-md flex items-center justify-center cursor-pointer">
+                <i class="fa-solid fa-floppy-disk mr-2"></i> Save Recipients
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Complaints Modal -->
+<div id="admin-complaints-modal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-md z-[105] hidden items-center justify-center p-3 sm:p-5 transition-opacity print:hidden">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-pop-in border border-slate-200/80">
+        <!-- Top Accent Bar -->
+        <div class="h-2 bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 w-full shrink-0"></div>
+
+        <!-- Modal Header -->
+        <div class="p-4 sm:p-6 pb-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 bg-slate-50/50">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-11 h-11 rounded-2xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center text-xl shrink-0 shadow-2xs">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-xl font-extrabold text-slate-800 tracking-tight">Filed Complaints Directory</h3>
+                        <span id="complaints-count-badge" class="bg-red-100 text-red-700 text-xs font-black px-2.5 py-0.5 rounded-full border border-red-200">0 Complaints</span>
+                    </div>
+                    <p class="text-xs text-slate-500 font-medium">Review, search, print, and process formal grievances submitted by clients</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 self-end sm:self-center">
+                <button type="button" id="close-complaints-btn" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Search & Filter Bar -->
+        <div class="px-4 sm:px-6 py-3 bg-white border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+            <div class="relative w-full sm:max-w-md">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                </div>
+                <input type="text" id="complaints-search-input" placeholder="Search by complainant, incident place, or keyword..." class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3.5 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all">
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button type="button" id="print-complaints-summary-btn" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer border border-slate-200">
+                    <i class="fa-solid fa-print text-red-600"></i>
+                    <span>Print All Complaints</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Scrollable Complaints List -->
+        <div class="flex-grow overflow-y-auto p-4 sm:p-6 bg-slate-50/40 custom-scrollbar">
+            <div id="complaints-list-container" class="space-y-4">
+                <!-- Instantiated dynamically -->
+                <div class="text-center py-16 text-slate-400 italic">Loading complaints...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manage QR Codes Modal (Slide-over Side Panel Drawer) -->
+<div id="manage-qrcode-modal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-xs flex justify-end print:hidden overflow-hidden transition-opacity">
+    <div class="w-full max-w-3xl lg:max-w-4xl xl:max-w-5xl bg-white h-full flex flex-col shadow-2xl border-l border-slate-200/80 animate-drawer-in duration-300">
+        <!-- Header Bar -->
+        <div class="bg-gradient-to-r from-bisu-blue via-[#180058] to-bisu-blue-dark text-white px-5 py-3 flex items-center justify-between shrink-0 shadow-md border-b border-white/10">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-white/10 text-bisu-gold border border-white/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
+                    <i class="fa-solid fa-qrcode text-base"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-white tracking-tight leading-tight">QR Code Generator & Gallery</h3>
+                    <p class="text-[11px] text-blue-200/90 font-medium">Generate custom office QR codes for fast customer feedback submission</p>
+                </div>
+            </div>
+            <button type="button" id="close-qrcode-btn" class="bg-white/10 hover:bg-white/20 text-white transition px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 border border-white/20 cursor-pointer shadow-xs hover:text-bisu-gold">
+                <i class="fa-solid fa-xmark text-sm"></i>
+                <span>Close</span>
+            </button>
+        </div>
+        <div class="h-0.5 bg-gradient-to-r from-bisu-red via-bisu-gold to-bisu-blue shrink-0"></div>
+
+        <!-- Navigation Tabs inside Modal -->
+        <div class="bg-white border-b border-slate-200 px-5 py-2 flex items-center gap-2 shrink-0 shadow-2xs">
+            <button id="qr-tab-generate" type="button" class="py-2 px-4 font-extrabold text-xs border-b-2 border-bisu-blue text-bisu-blue flex items-center gap-2 transition-colors cursor-pointer">
+                <i class="fa-solid fa-wand-magic-sparkles text-xs"></i> Generate New QR Code
+            </button>
+            <button id="qr-tab-gallery" type="button" class="py-2 px-4 font-extrabold text-xs border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 transition-colors cursor-pointer">
+                <i class="fa-solid fa-border-all text-xs"></i> Saved QR Codes <span id="qr-count-badge" class="bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+            </button>
+        </div>
+
+        <!-- Tab Content Container -->
+        <div class="flex-grow overflow-y-auto custom-scrollbar p-5 space-y-6 bg-slate-50/50">
+            
+            <!-- TAB 1: GENERATE NEW QR -->
+            <div id="qr-content-generate" class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                <!-- Left Column: Controls -->
+                <div class="md:col-span-5 space-y-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+                    <h4 class="font-bold text-slate-800 text-sm border-b border-slate-200 pb-2 flex items-center">
+                        <i class="fa-solid fa-sliders text-bisu-blue mr-2"></i> QR Code Settings
+                    </h4>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Target Office / Department</label>
+                        <select id="qr-office-select" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm font-semibold bg-white focus:ring-2 focus:ring-bisu-blue focus:border-bisu-blue outline-none cursor-pointer">
+                            <option value="">All Offices (General Feedback)</option>
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Station / Location Label <span class="text-slate-400 font-normal">(Optional)</span></label>
+                        <input type="text" id="qr-station-input" placeholder="e.g. Front Desk Counter 1" class="w-full border border-slate-300 rounded-xl p-2.5 text-sm font-semibold bg-white focus:ring-2 focus:ring-bisu-blue outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Public System URL <i class="fa-solid fa-circle-info text-blue-500" title="Used for scanning from external smartphones without 403 error"></i></label>
+                        <input type="text" id="qr-baseurl-input" placeholder="https://..." class="w-full border border-slate-300 rounded-xl p-2 text-xs font-mono font-medium bg-white focus:ring-2 focus:ring-bisu-blue outline-none">
+                        <p class="text-[10px] text-slate-400 mt-1">Automatically converted to public shared link so smartphones won't get a 403 forbidden error.</p>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-200">
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            <input type="checkbox" id="qr-kiosk-mode" checked class="w-4 h-4 text-bisu-blue rounded focus:ring-bisu-blue cursor-pointer">
+                            <span class="text-xs font-semibold text-slate-700">Kiosk Mode (Hide admin lock icon on target page)</span>
+                        </label>
+                    </div>
+
+                    <button type="button" id="btn-render-qr" class="w-full py-3 bg-bisu-blue hover:bg-bisu-blue-dark text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-rotate text-sm"></i> Refresh / Generate Preview
+                    </button>
+                </div>
+
+                <!-- Right Column: Poster Preview -->
+                <div class="md:col-span-7 flex flex-col items-center justify-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative text-center">
+                    
+                    <!-- Printable Poster Preview Frame -->
+                    <div id="qr-poster-frame" class="bg-white border-2 border-bisu-blue rounded-2xl shadow-md w-full max-w-sm flex flex-col items-center justify-center relative overflow-hidden">
+                        <!-- Top Accent Bar -->
+                        <div class="w-full h-1.5 bg-gradient-to-r from-bisu-red via-bisu-gold to-bisu-blue"></div>
+
+                        <div class="p-5 w-full flex flex-col items-center">
+                            <!-- Poster Header with All 3 Logos -->
+                            <div class="flex items-center justify-between gap-2 mb-3 pb-2.5 border-b border-slate-100 w-full">
+                                <img src="images/BISU.webp" alt="BISU Logo" class="w-9 h-9 object-contain shrink-0">
+                                <div class="text-center flex-1 min-w-0">
+                                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest block leading-none">Republic of the Philippines</span>
+                                    <h5 class="text-[11px] font-black text-bisu-blue tracking-tight uppercase leading-tight truncate">Bohol Island State University</h5>
+                                    <p class="text-[9px] text-slate-500 font-bold leading-none">Calape Campus</p>
+                                </div>
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <img src="images/BAGONG-PILIPINAS-LOGO-1-1.webp" alt="Bagong Pilipinas" class="w-8 h-8 object-contain">
+                                    <img src="images/images.webp" alt="TUV Rheinland ISO" class="w-8 h-8 object-contain rounded">
+                                </div>
+                            </div>
+
+                            <!-- Target Office Banner -->
+                            <div class="bg-gradient-to-br from-blue-50 to-indigo-50/50 border border-blue-200/80 rounded-xl p-3 w-full mb-3 text-center">
+                                <span class="text-[9px] font-black uppercase tracking-widest text-bisu-blue block mb-0.5">Customer Satisfaction Survey</span>
+                                <h4 id="qr-preview-office-title" class="text-sm font-extrabold text-slate-900 leading-snug">All Offices</h4>
+                                <p id="qr-preview-station-title" class="text-[10px] font-bold text-slate-500 mt-0.5 hidden">Station: Counter 1</p>
+                            </div>
+
+                            <!-- Canvas QR Code Container -->
+                            <div class="bg-white p-2.5 rounded-xl border-2 border-slate-200 shadow-xs mb-3 flex items-center justify-center">
+                                <canvas id="qr-preview-canvas" class="w-44 h-44"></canvas>
+                            </div>
+
+                            <!-- Call to Action -->
+                            <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80 w-full text-center mb-1">
+                                <p class="text-[11px] font-extrabold text-slate-800 flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-camera text-bisu-blue"></i> Scan with smartphone camera
+                                </p>
+                                <p class="text-[9px] font-medium text-slate-500 mt-0.5">Point camera at QR code to open feedback form</p>
+                            </div>
+
+                            <p id="qr-preview-url-text" class="text-[9px] text-slate-400 font-mono truncate max-w-xs"></p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap items-center justify-center gap-2 mt-5 w-full">
+                        <button type="button" id="btn-save-qr" class="px-4 py-2.5 bg-bisu-blue text-white text-xs font-bold rounded-xl hover:bg-bisu-blue-dark transition shadow-sm flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-bookmark"></i> Save to Gallery
+                        </button>
+                        <button type="button" id="btn-copy-qr-link" class="px-4 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-copy"></i> Copy Link
+                        </button>
+                        <button type="button" id="btn-download-qr-png" class="px-4 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-download"></i> Download PNG
+                        </button>
+                        <button type="button" id="btn-print-qr-poster" class="px-4 py-2.5 bg-bisu-gold hover:bg-yellow-400 text-slate-900 text-xs font-extrabold rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-print"></i> Print Poster
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: SAVED QR CODES GALLERY -->
+            <div id="qr-content-gallery" class="hidden space-y-4">
+                <div class="flex justify-between items-center bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                    <p class="text-xs font-bold text-slate-600">Saved QR posters can be viewed, reprinted, or downloaded anytime.</p>
+                    <button type="button" id="btn-print-all-qrs" class="px-3.5 py-2 bg-bisu-blue text-white text-xs font-bold rounded-xl hover:bg-bisu-blue-dark transition flex items-center gap-1.5 shadow-xs cursor-pointer">
+                        <i class="fa-solid fa-print"></i> Print All Posters
+                    </button>
+                </div>
+
+                <div id="qr-gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Populated dynamically in app.js -->
+                    <div class="col-span-full text-center py-12 text-slate-400 italic">No saved QR codes yet. Generate one to save it here!</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- View Archived Records Vault (Slide-over Side Panel Drawer) -->
+<div id="view-archived-modal" class="fixed inset-0 z-[105] hidden bg-slate-900/60 backdrop-blur-xs flex justify-end print:hidden overflow-hidden transition-opacity">
+    <!-- Panel Drawer Container -->
+    <div class="w-full max-w-3xl lg:max-w-4xl xl:max-w-5xl bg-slate-100 h-full flex flex-col shadow-2xl border-l border-slate-200/80 animate-drawer-in duration-300">
+        <!-- Header Bar -->
+        <div class="bg-gradient-to-r from-bisu-blue via-[#180058] to-bisu-blue-dark text-white px-5 py-3 flex items-center justify-between shrink-0 shadow-md border-b border-white/10">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-white/10 text-bisu-gold border border-white/20 flex items-center justify-center font-bold shadow-2xs shrink-0">
+                    <i class="fa-solid fa-box-archive text-base"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-white tracking-tight leading-tight">
+                        Archive Vault
+                    </h3>
+                    <p class="text-[11px] text-blue-200/90 font-medium">Browse, search, filter, export, or restore archived records</p>
+                </div>
+            </div>
+            <button type="button" id="close-archived-btn" class="bg-white/10 hover:bg-white/20 text-white transition px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 border border-white/20 cursor-pointer shadow-xs hover:text-bisu-gold">
+                <i class="fa-solid fa-xmark text-sm"></i>
+                <span>Close</span>
+            </button>
+        </div>
+        <!-- Seamless Accent Gradient Bar -->
+        <div class="h-0.5 bg-gradient-to-r from-bisu-red via-bisu-gold to-bisu-blue shrink-0"></div>
+
+        <!-- Controls / Navigation Tabs / Filters Bar -->
+        <div class="bg-white border-b border-slate-200 px-5 py-2.5 flex flex-col gap-2.5 shrink-0 shadow-2xs">
+            <!-- Top Controls Row: Search & Month Filter & Merge -->
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2 flex-grow sm:flex-grow-0">
+                    <div class="relative flex-1 sm:w-48">
+                        <select id="archived-month-filter" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-bisu-blue focus:ring-1 focus:ring-bisu-blue cursor-pointer truncate">
+                            <option value="ALL">All Archives</option>
+                        </select>
+                        <i class="fa-solid fa-box-archive absolute left-2.5 top-1/2 -translate-y-1/2 text-amber-500 text-xs pointer-events-none"></i>
+                    </div>
+                    <button id="merge-archives-btn" type="button" onclick="openMergeArchivedModal()" title="Combine selected archive batches into one" class="bg-bisu-gold hover:bg-bisu-gold-dark text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl transition shadow-2xs flex items-center gap-1.5 cursor-pointer shrink-0">
+                        <i class="fa-solid fa-code-merge text-[11px]"></i>
+                        <span>Merge</span>
+                    </button>
+                    <button id="restore-archives-btn" type="button" onclick="openRestoreBatchChooserModal()" title="Choose an archived batch to restore to the live dashboard" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-3 py-1.5 rounded-xl transition shadow-2xs flex items-center gap-1.5 cursor-pointer shrink-0">
+                        <i class="fa-solid fa-rotate-left text-[11px]"></i>
+                        <span>Restore Batch</span>
+                    </button>
+                </div>
+
+                <div class="relative w-full sm:w-56">
+                    <input type="text" id="archived-search-input" placeholder="Search archives..." class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-bisu-blue focus:ring-1 focus:ring-bisu-blue">
+                    <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                </div>
+            </div>
+
+            <!-- Tabs Row -->
+            <div class="flex border-b border-slate-200 gap-1 overflow-x-auto custom-scrollbar pt-1">
+                <button id="archive-tab-feedbacks" type="button" class="py-1.5 px-3 font-extrabold text-xs border-b-2 border-bisu-blue text-bisu-blue flex items-center gap-1.5 transition-colors cursor-pointer shrink-0">
+                    <i class="fa-solid fa-comments"></i> Feedbacks (<span id="archived-feedback-count">0</span>)
+                </button>
+                <button id="archive-tab-complaints" type="button" class="py-1.5 px-3 font-extrabold text-xs border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition-colors cursor-pointer shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Complaints (<span id="archived-complaint-count">0</span>)
+                </button>
+                <button id="archive-tab-batches" type="button" class="py-1.5 px-3 font-extrabold text-xs border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition-colors cursor-pointer shrink-0">
+                    <i class="fa-solid fa-clock-rotate-left"></i> History (<span id="archived-batch-count">0</span>)
+                </button>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="flex-grow overflow-y-auto custom-scrollbar p-4 sm:p-5 bg-slate-100/80">
+            <div class="space-y-4">
+                <!-- Feedbacks Tab View -->
+                <div id="archived-feedbacks-container" class="space-y-3">
+                    <div class="text-center py-16 text-slate-400 italic">No archived feedbacks stored yet.</div>
+                </div>
+
+                <!-- Complaints Tab View -->
+                <div id="archived-complaints-container" class="space-y-3 hidden">
+                    <div class="text-center py-16 text-slate-400 italic">No archived complaints stored yet.</div>
+                </div>
+
+                <!-- Batches Tab View -->
+                <div id="archived-batches-container" class="space-y-3 hidden">
+                    <div class="text-center py-16 text-slate-400 italic">No archive history recorded yet.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Action Footer -->
+        <div class="bg-white border-t border-slate-200 px-5 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 shrink-0 shadow-lg">
+            <div class="flex items-center gap-2 font-semibold text-[11px] text-slate-500">
+                <i class="fa-solid fa-database text-slate-400"></i>
+                <span id="archived-vault-summary">0 archived records stored in vault.</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="openRestoreBatchChooserModal()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-xs">
+                    <i class="fa-solid fa-rotate-left"></i> Restore Batch
+                </button>
+                <button type="button" onclick="openExportFormatChooserForVault('batch')" class="px-3 py-1.5 bg-bisu-gold hover:bg-bisu-gold-dark text-slate-950 font-black text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-xs">
+                    <i class="fa-solid fa-file-export"></i> Export Batch
+                    <i class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
+                </button>
+                <button type="button" onclick="openExportFormatChooserForVault('all')" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-black text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-xs">
+                    <i class="fa-solid fa-file-export"></i> Export All Archives
+                    <i class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy Consent Modal (Overlay) -->
+<div id="privacy-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900 bg-opacity-50 backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-5 sm:p-6 m-4 animate-pop-in">
+        <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-bisu-blue mb-4 mx-auto">
+            <i class="fa-solid fa-shield-halved text-2xl"></i>
+        </div>
+        <h2 id="t-modal-title" class="text-xl font-bold text-center mb-2">Data Privacy Act Consent</h2>
+        <p id="t-modal-desc" class="text-sm text-slate-600 mb-6 text-center">
+            In accordance with the Data Privacy Act of 2012, we ensure that your personal data is protected. 
+            The information gathered will be used solely for evaluating and improving our services.
+        </p>
+        <div class="flex items-start mb-6">
+            <div class="flex items-center h-5">
+                <input id="consent-checkbox" type="checkbox" class="w-5 h-5 text-bisu-blue bg-gray-100 border-gray-300 rounded focus:ring-bisu-blue">
+            </div>
+            <label for="consent-checkbox" id="t-modal-check" class="ml-3 text-sm font-medium text-slate-700">
+                I agree to the terms and authorize BISU to process my feedback.
+            </label>
+        </div>
+        <button id="accept-consent-btn" disabled class="w-full text-white bg-bisu-blue hover:bg-bisu-blue-dark disabled:opacity-50 disabled:cursor-not-allowed font-medium rounded-xl text-lg px-5 py-3 text-center transition-all duration-200 shadow-md">
+            <span id="t-modal-btn">Proceed to Form</span>
+        </button>
+    </div>
+</div>
+
+<!-- Notification Toast -->
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>

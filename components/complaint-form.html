@@ -1,0 +1,288 @@
+<!-- VIEW: Formal Complaint Form (F-AQA-CSF-004 Rev. 2) -->
+<section id="view-complaint" class="space-y-6 section-hidden animate-slide-up max-w-5xl mx-auto w-full py-2">
+    <!-- Main Paper Container -->
+    <div class="bg-white border border-slate-300 rounded-2xl shadow-xl overflow-hidden print:border-none print:shadow-none">
+        
+        <div class="p-6 sm:p-8 md:p-10 space-y-6">
+            
+            <!-- Top Navigation & Action Header (Screen only) -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 print:hidden">
+                <div class="flex items-center space-x-3">
+                    <button type="button" id="back-to-feedback-btn" class="inline-flex items-center space-x-2 text-slate-700 hover:text-bisu-blue bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer border border-slate-300">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span id="t-cp-back">Back to Feedback</span>
+                    </button>
+
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <span id="complaint-qr-indicator" class="hidden bg-blue-50 text-bisu-blue border border-blue-200 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <i class="fa-solid fa-qrcode text-bisu-gold"></i>
+                        <span id="complaint-qr-office-name">Scanned Location</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- OFFICIAL DOCUMENT HEADER (Replicating Official BISU Form Header) -->
+            <div class="border-b-2 border-slate-900 pb-5 pt-1">
+                <div class="grid grid-cols-12 items-center gap-2 sm:gap-4">
+                    <!-- Left Seal: BISU Logo -->
+                    <div class="col-span-3 sm:col-span-2 flex items-center justify-center">
+                        <img src="images/BISU.webp" alt="BISU Logo" class="h-16 sm:h-20 md:h-24 object-contain">
+                    </div>
+
+                    <!-- Center Title Text -->
+                    <div class="col-span-6 sm:col-span-8 text-center space-y-0.5">
+                        <p class="text-[11px] sm:text-xs font-semibold text-slate-700 uppercase tracking-wide">Republic of the Philippines</p>
+                        <h1 class="text-sm sm:text-base md:text-lg font-black tracking-tight text-slate-900 uppercase">BOHOL ISLAND STATE UNIVERSITY</h1>
+                        <p class="text-[11px] sm:text-xs font-medium text-slate-600">Calape Campus, Bohol, Philippines</p>
+                        
+                        <!-- Office Header Line -->
+                        <div class="pt-1 flex items-center justify-center gap-1 text-xs sm:text-sm font-bold text-slate-900">
+                            <span>Office of the</span>
+                            <div class="relative min-w-[180px] sm:min-w-[260px]">
+                                <select id="comp-office-header" class="w-full bg-slate-50 hover:bg-white border-b-2 border-slate-800 text-bisu-blue font-black text-xs sm:text-sm py-0.5 px-2 focus:outline-none focus:border-red-600 cursor-pointer print:bg-transparent">
+                                    <option value="" disabled selected>Select Office Concerned</option>
+                                    <!-- Rendered dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <p class="text-[10px] sm:text-[11px] font-bold italic text-slate-600 pt-1 tracking-wider">
+                            Balance | Integrity | Stewardship | Uprightness
+                        </p>
+                    </div>
+
+                    <!-- Right Seals: Bagong Pilipinas & TUV Rheinland ISO Logo -->
+                    <div class="col-span-3 sm:col-span-2 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+                        <img src="images/BAGONG-PILIPINAS-LOGO-1-1.webp" alt="Bagong Pilipinas" class="h-10 sm:h-12 md:h-14 object-contain">
+                        <img src="images/images.webp" alt="TUV Rheinland" class="h-10 sm:h-12 md:h-14 object-contain">
+                    </div>
+                </div>
+            </div>
+
+            <!-- FORM TITLE & CONFIDENTIALITY NOTICE -->
+            <div class="text-center space-y-3 pt-2">
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight uppercase underline underline-offset-4">
+                    COMPLAINT FORM
+                </h2>
+
+                <div class="border border-slate-400 p-4 rounded-lg text-left text-xs sm:text-sm text-slate-800 leading-relaxed font-normal bg-slate-50/50">
+                    <p class="text-justify">
+                        The Customer Satisfaction Feedback Complaint Form shall be given to any client who is experiencing dissatisfaction with the services rendered by the unit/office to take necessary actions whenever there is a need to. Please fill out this form with the needed data/information. Rest assured that the data/information gathered will be handled with confidentiality which is in accordance with the <strong>DATA PRIVACY ACT</strong>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- COMPLAINT FORM START -->
+            <form id="complaint-form" class="space-y-6 pt-2">
+
+                <!-- FIELD: NAME OF PERSON COMPLAINT OF -->
+                <div class="space-y-1">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <label for="comp-person-complained-of" class="text-xs sm:text-sm font-black text-slate-900 uppercase shrink-0">
+                            NAME OF PERSON COMPLAINT OF : <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="comp-person-complained-of" required placeholder="Name of employee, staff, or personnel concerned (or Office/Unit if unknown)" class="w-full bg-transparent border-b-2 border-slate-800 text-slate-900 text-sm font-bold px-2 py-1 focus:outline-none focus:border-red-600 focus:bg-amber-50/30 transition-colors rounded-none">
+                    </div>
+                </div>
+
+                <!-- SECTION 1: DETAILS OF THE COMPLAINANT -->
+                <div class="space-y-3 pt-2">
+                    <div class="border-b-2 border-slate-900 pb-1 flex items-center justify-between">
+                        <h3 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-900">
+                            DETAILS OF THE COMPLAINANT
+                        </h3>
+                        <span class="text-[10px] font-semibold text-slate-500 italic">(Optional for Anonymity)</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-xs sm:text-sm pt-1">
+                        <!-- Name of Complainant -->
+                        <div class="md:col-span-2 flex flex-col sm:flex-row sm:items-baseline gap-2">
+                            <label for="comp-name" class="font-bold text-slate-900 uppercase shrink-0 sm:w-44">Name of Complainant :</label>
+                            <input type="text" id="comp-name" placeholder="Leave blank if you wish to remain anonymous" class="w-full bg-transparent border-b border-slate-700 text-slate-900 font-bold px-2 py-1 focus:outline-none focus:border-bisu-blue focus:bg-amber-50/30 transition-colors rounded-none">
+                        </div>
+
+                        <!-- Address -->
+                        <div class="md:col-span-2 flex flex-col sm:flex-row sm:items-baseline gap-2">
+                            <label for="comp-address" class="font-bold text-slate-900 uppercase shrink-0 sm:w-44">Address :</label>
+                            <input type="text" id="comp-address" placeholder="Barangay / Municipality / Province" class="w-full bg-transparent border-b border-slate-700 text-slate-900 font-bold px-2 py-1 focus:outline-none focus:border-bisu-blue focus:bg-amber-50/30 transition-colors rounded-none">
+                        </div>
+
+                        <!-- Sex -->
+                        <div class="flex items-center gap-2">
+                            <label for="comp-sex" class="font-bold text-slate-900 uppercase shrink-0">Sex :</label>
+                            <select id="comp-sex" class="w-full bg-transparent border-b border-slate-700 text-slate-900 font-bold px-2 py-1 focus:outline-none focus:border-bisu-blue cursor-pointer rounded-none">
+                                <option value="" selected>Select Sex</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Prefer not to say">Prefer not to say</option>
+                            </select>
+                        </div>
+
+                        <!-- Age -->
+                        <div class="flex items-center gap-2">
+                            <label for="comp-age" class="font-bold text-slate-900 uppercase shrink-0">Age :</label>
+                            <input type="number" id="comp-age" min="1" max="120" placeholder="e.g. 21" class="w-full bg-transparent border-b border-slate-700 text-slate-900 font-bold px-2 py-1 focus:outline-none focus:border-bisu-blue focus:bg-amber-50/30 transition-colors rounded-none">
+                        </div>
+
+                        <!-- Civil Status -->
+                        <div class="flex items-center gap-2">
+                            <label for="comp-civil-status" class="font-bold text-slate-900 uppercase shrink-0">Civil Status :</label>
+                            <select id="comp-civil-status" class="w-full bg-transparent border-b border-slate-700 text-slate-900 font-bold px-2 py-1 focus:outline-none focus:border-bisu-blue cursor-pointer rounded-none">
+                                <option value="" selected>Select Civil Status</option>
+                                <option value="Single">Single</option>
+                                <option value="Married">Married</option>
+                                <option value="Widowed">Widowed</option>
+                                <option value="Separated">Separated</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Contact Details -->
+                        <div class="flex items-center gap-2">
+                            <label for="comp-contact" class="font-bold text-slate-900 uppercase shrink-0">Contact Details :</label>
+                            <input type="text" id="comp-contact" placeholder="Mobile Number or Email" class="w-full bg-transparent border-b border-slate-700 text-slate-900 font-bold px-2 py-1 focus:outline-none focus:border-bisu-blue focus:bg-amber-50/30 transition-colors rounded-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: COMPLAINT DETAILS -->
+                <div class="space-y-3 pt-2">
+                    <div class="border-b-2 border-slate-900 pb-1 flex items-center justify-between">
+                        <h3 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-900">
+                            COMPLAINT DETAILS
+                        </h3>
+                        <span class="text-[10px] font-semibold text-red-600 italic">(Required)</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-xs sm:text-sm pt-1">
+                        <!-- Date of Incident -->
+                        <div class="flex items-center gap-2">
+                            <label for="comp-date" class="font-bold text-slate-900 uppercase shrink-0">Date of Incident <span class="text-red-500">*</span> :</label>
+                            <input type="date" id="comp-date" required class="w-full bg-transparent border-b border-slate-700 text-slate-900 font-bold px-2 py-1 focus:outline-none focus:border-red-600 focus:bg-amber-50/30 transition-colors rounded-none">
+                        </div>
+
+                        <!-- Time of Incident -->
+                        <div class="flex items-center gap-2">
+                            <label for="comp-time" class="font-bold text-slate-900 uppercase shrink-0">Time <span class="text-red-500">*</span> :</label>
+                            <input type="time" id="comp-time" required class="w-full bg-transparent border-b border-slate-700 text-slate-900 font-bold px-2 py-1 focus:outline-none focus:border-red-600 focus:bg-amber-50/30 transition-colors rounded-none">
+                        </div>
+
+                        <!-- Place of Incident -->
+                        <div class="md:col-span-2 flex flex-col sm:flex-row sm:items-baseline gap-2">
+                            <label for="comp-place" class="font-bold text-slate-900 uppercase shrink-0 sm:w-44">Place of Incident <span class="text-red-500">*</span> :</label>
+                            <input type="text" id="comp-place" required placeholder="Specific office, room, or location on campus" class="w-full bg-transparent border-b border-slate-700 text-slate-900 font-bold px-2 py-1 focus:outline-none focus:border-red-600 focus:bg-amber-50/30 transition-colors rounded-none">
+                        </div>
+
+                        <!-- Act/s Complained of / Details of Complain -->
+                        <div class="md:col-span-2 flex flex-col sm:flex-row sm:items-baseline gap-2">
+                            <label for="comp-details" class="font-bold text-slate-900 uppercase shrink-0 sm:w-44">Act/s Complained of <span class="text-red-500">*</span> :</label>
+                            <input type="text" id="comp-details" required placeholder="Specific action, misconduct, delay, or issue experienced" class="w-full bg-transparent border-b border-slate-700 text-slate-900 font-bold px-2 py-1 focus:outline-none focus:border-red-600 focus:bg-amber-50/30 transition-colors rounded-none">
+                        </div>
+
+                        <!-- Narrative Report of Complaint -->
+                        <div class="md:col-span-2 space-y-1.5">
+                            <label for="comp-narrative" class="block font-bold text-slate-900 uppercase">NARRATIVE REPORT OF COMPLAINT <span class="text-red-500">*</span> :</label>
+                            <textarea id="comp-narrative" rows="5" required placeholder="Detailed chronological account of the incident..." class="w-full bg-slate-50/50 border border-slate-400 text-slate-900 font-medium rounded-md p-3 focus:outline-none focus:border-red-600 focus:bg-white transition-all leading-relaxed"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: PROOF OF COMPLAINT -->
+                <div class="space-y-3 pt-2">
+                    <div class="border-b-2 border-slate-900 pb-1">
+                        <h3 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-900">
+                            PROOF OF COMPLAINT <span class="text-[11px] font-normal lowercase text-slate-600">(Document/s / Evidence/s / Witness/es) (May Use Attachments)</span>
+                        </h3>
+                    </div>
+
+                    <div class="space-y-3 text-xs sm:text-sm">
+                        <textarea id="comp-proof" rows="3" placeholder="List down any physical evidence, documents, photographs, or witness names/contacts..." class="w-full bg-slate-50/50 border border-slate-400 text-slate-900 font-medium rounded-md p-3 focus:outline-none focus:border-bisu-blue focus:bg-white transition-all leading-relaxed"></textarea>
+
+                        <!-- Optional File Upload Attachment -->
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-200">
+                            <span class="text-xs font-bold text-slate-700 uppercase">Supporting Attachment (Optional):</span>
+                            <div class="flex items-center gap-3">
+                                <label for="comp-attachment-input" class="cursor-pointer bg-slate-200 hover:bg-slate-300 text-slate-800 px-3 py-1.5 rounded text-xs font-bold transition inline-flex items-center gap-1.5">
+                                    <i class="fa-solid fa-paperclip text-bisu-blue"></i>
+                                    <span>Choose File</span>
+                                </label>
+                                <input type="file" id="comp-attachment-input" accept="image/*,.pdf,.doc,.docx" class="hidden">
+                                <span id="comp-attachment-filename" class="text-xs text-slate-500 italic">No file selected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 4: COMPLAINT OUTCOME -->
+                <div class="space-y-3 pt-2">
+                    <div class="border-b-2 border-slate-900 pb-1">
+                        <h3 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-900">
+                            COMPLAINT OUTCOME <span class="text-[11px] font-normal lowercase text-slate-600">(As a result of making this complaint, what outcome would you like to have / to expect?)</span>
+                        </h3>
+                    </div>
+
+                    <div class="text-xs sm:text-sm">
+                        <textarea id="comp-outcome" rows="3" required placeholder="State your desired corrective action, redress, or expected resolution..." class="w-full bg-slate-50/50 border border-slate-400 text-slate-900 font-medium rounded-md p-3 focus:outline-none focus:border-red-600 focus:bg-white transition-all leading-relaxed"></textarea>
+                    </div>
+                </div>
+
+                <!-- SECTION 5: LEGAL BINDING STATEMENT & TERMS OF AGREEMENT -->
+                <div class="pt-4 border-t-2 border-slate-300 space-y-4">
+                    <p class="text-xs sm:text-sm text-slate-900 font-bold leading-relaxed text-justify">
+                        Upon filling-up this form, I bind myself to stand on the truth of this complaint as a <strong class="text-red-700 uppercase">COMPLAINANT/AGGRIEVED PARTY</strong> on behalf of the public and the institution for legal proceedings may be required as provided by the existing laws.
+                    </p>
+
+                    <p class="text-xs sm:text-sm text-slate-800 font-medium leading-relaxed">
+                        <strong>Terms of Agreement</strong> - I agree that the provided information asked herein will be used by the University for whatever legal purpose it may serve.
+                    </p>
+
+                    <!-- Agreement Checkbox -->
+                    <div class="flex items-start gap-3 pt-2">
+                        <input id="comp-truth" type="checkbox" required class="w-5 h-5 text-red-600 bg-white border-slate-400 rounded focus:ring-red-500 cursor-pointer mt-0.5">
+                        <label for="comp-truth" class="text-xs sm:text-sm font-extrabold text-slate-900 cursor-pointer select-none">
+                            I accept the Terms of Agreement and confirm the truthfulness of the complaint.
+                        </label>
+                    </div>
+
+                    <!-- Signature & Date Placeholder Line -->
+                    <div class="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-6 items-end border-t border-slate-300">
+                        <div class="text-center sm:text-left">
+                            <div class="border-b-2 border-slate-900 pb-1">
+                                <input type="text" id="comp-signature-name" placeholder="Type Full Name for Digital Signature" class="w-full text-center sm:text-left font-black text-slate-900 text-sm bg-transparent focus:outline-none">
+                            </div>
+                            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mt-1">Signature over Printed Name of the Complainant</span>
+                        </div>
+
+                        <div class="text-center sm:text-right">
+                            <div class="border-b-2 border-slate-900 pb-1">
+                                <span id="comp-date-signed-display" class="font-black text-slate-900 text-sm"></span>
+                            </div>
+                            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mt-1">(Date)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DOCUMENT CONTROL FOOTER CODE (Matching Physical Form) -->
+                <div class="flex items-center justify-between text-[11px] font-mono font-bold text-slate-500 border-t border-slate-200 pt-3 px-1">
+                    <span>F-AQA-CSF-004 | Rev. 2 | 07/01/24</span>
+                    <span>Page 1 of 1</span>
+                </div>
+
+                <!-- FORM SUBMISSION BUTTONS (Screen only) -->
+                <div class="flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 print:hidden">
+                    <button type="button" id="clear-complaint-btn" class="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center space-x-2 cursor-pointer border border-slate-300">
+                        <i class="fa-solid fa-eraser"></i>
+                        <span>Clear Form</span>
+                    </button>
+                    <button type="submit" id="submit-complaint-btn" class="w-full sm:w-auto text-white bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-700 hover:to-rose-800 focus:ring-4 focus:ring-red-200 font-extrabold rounded-xl text-base px-8 py-3.5 text-center shadow-lg shadow-red-600/20 transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span id="t-cp-submit">Submit Formal Complaint</span>
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</section>

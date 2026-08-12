@@ -1,0 +1,6 @@
+/* style.css — BISU Feedback System Professional UI - Modular Stylesheets */
+
+@import "./css/base.css";
+@import "./css/animations.css";
+@import "./css/components.css";
+@import "./css/print.css";

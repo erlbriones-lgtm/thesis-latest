@@ -83,6 +83,16 @@
     box-shadow: 0 4px 12px -1px rgba(225, 29, 72, 0.35);
     transform: scale(1.08) translateY(-1px);
 }
+/* 0 - Not Applicable (Emerald) */
+.likert-btn.selected[data-value="0"] {
+    background-color: #059669;
+    border-color: #059669;
+    color: #ffffff;
+    font-weight: 900;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 12px -1px rgba(5, 150, 105, 0.35);
+    transform: scale(1.08) translateY(-1px);
+}
 
 /* ━━━ Glassmorphism ━━━ */
 .glass {

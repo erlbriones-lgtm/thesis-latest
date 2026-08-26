@@ -160,23 +160,23 @@ CREATE POLICY "Allow admin delete complaints" ON complaints
         EXISTS (SELECT 1 FROM admin_users au WHERE au.user_id = auth.uid())
     );
 
--- Office accounts (admin-managed)
+-- Office accounts (admin-managed and authorized office logins)
 CREATE TABLE IF NOT EXISTS office_accounts (
     id BIGSERIAL PRIMARY KEY,
     office_name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    password TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 ALTER TABLE office_accounts ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow admin manage office accounts" ON office_accounts
-    FOR ALL USING (
-        EXISTS (SELECT 1 FROM admin_users au WHERE au.user_id = auth.uid())
-    )
-    WITH CHECK (
-        EXISTS (SELECT 1 FROM admin_users au WHERE au.user_id = auth.uid())
-    );
+CREATE POLICY "Allow public read office accounts" ON office_accounts
+    FOR SELECT USING (true);
+
+CREATE POLICY "Allow public manage office accounts" ON office_accounts
+    FOR ALL USING (true) WITH CHECK (true);
 
 -- Allow everyone to read the current public form configuration
 CREATE POLICY "Allow public read admin settings" ON admin_settings

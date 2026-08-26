@@ -53,7 +53,9 @@ CREATE TABLE IF NOT EXISTS public.office_accounts (
   id BIGSERIAL PRIMARY KEY,
   office_name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  password TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE public.office_accounts ENABLE ROW LEVEL SECURITY;
@@ -61,10 +63,17 @@ ALTER TABLE public.office_accounts ENABLE ROW LEVEL SECURITY;
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'office_accounts' AND policyname = 'Allow admin manage office accounts'
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'office_accounts' AND policyname = 'Allow public read office accounts'
   ) THEN
-    CREATE POLICY "Allow admin manage office accounts" ON public.office_accounts
-      FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+    CREATE POLICY "Allow public read office accounts" ON public.office_accounts
+      FOR SELECT USING (true);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'office_accounts' AND policyname = 'Allow public manage office accounts'
+  ) THEN
+    CREATE POLICY "Allow public manage office accounts" ON public.office_accounts
+      FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
 

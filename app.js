@@ -1233,15 +1233,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewFeedback = document.getElementById('view-feedback');
     const viewComplaint = document.getElementById('view-complaint');
     const viewAdmin = document.getElementById('view-admin');
-    function showDefaultView() {
+    function showDefaultView(updateRoute = true) {
         if (viewFeedback) viewFeedback.classList.remove('section-hidden');
         if (viewComplaint) viewComplaint.classList.add('section-hidden');
         if (viewAdmin) viewAdmin.classList.add('section-hidden');
+        if (updateRoute && typeof syncUrlRoute === 'function') {
+            syncUrlRoute('feedback');
+        }
     }
 
     // Always start from the public feedback form on a normal page load.
     // Route-specific handlers below can still switch to complaint/admin views when needed.
-    showDefaultView();
+    showDefaultView(false);
 
     // Admin Login Modal
     const adminLoginModal = document.getElementById('admin-login-modal');
@@ -1388,6 +1391,7 @@ document.addEventListener('DOMContentLoaded', () => {
             "t-fb-neu": "Neutral",
             "t-fb-dis": "Dissatisfied",
             "t-fb-vd1": "Very Dissatisfied",
+            "t-fb-na": "Not Applicable",
             "t-fb-commend": "Commendations (Optional)",
             "t-fb-suggest": "Suggestions (Optional)",
             "t-fb-comp-link": "File a Formal Complaint instead",
@@ -1477,6 +1481,7 @@ document.addEventListener('DOMContentLoaded', () => {
             "t-fb-neu": "Neutral",
             "t-fb-dis": "Hindi Nasiyahan",
             "t-fb-vd1": "Lubos na Hindi Nasiyahan",
+            "t-fb-na": "Hindi Naaangkop",
             "t-fb-commend": "Papuri (Opsyonal)",
             "t-fb-suggest": "Mungkahi (Opsyonal)",
             "t-fb-comp-link": "Maghain ng Pormal na Reklamo",
@@ -1566,6 +1571,7 @@ document.addEventListener('DOMContentLoaded', () => {
             "t-fb-neu": "Neyutral",
             "t-fb-dis": "Dili Kontento",
             "t-fb-vd1": "Dili Kontento Kaayo",
+            "t-fb-na": "Walay Mabutang",
             "t-fb-commend": "Pagdayeg (Opsiyonal)",
             "t-fb-suggest": "Suhisyon (Opsiyonal)",
             "t-fb-comp-link": "Pag-file og Pormal nga Reklamo",
@@ -1657,11 +1663,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const ratingValues = [
-        { value: 1, text: '1', label: 'Very Dissatisfied', colorClass: 'hover:border-rose-400 hover:text-rose-600 hover:bg-rose-50' },
-        { value: 2, text: '2', label: 'Dissatisfied', colorClass: 'hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50' },
-        { value: 3, text: '3', label: 'Neutral', colorClass: 'hover:border-slate-400 hover:text-slate-600 hover:bg-slate-100' },
+        { value: 5, text: '5', label: 'Very Satisfied', colorClass: 'hover:border-yellow-400 hover:text-yellow-600 hover:bg-yellow-50' },
         { value: 4, text: '4', label: 'Satisfied', colorClass: 'hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50' },
-        { value: 5, text: '5', label: 'Very Satisfied', colorClass: 'hover:border-yellow-400 hover:text-yellow-600 hover:bg-yellow-50' }
+        { value: 3, text: '3', label: 'Neutral', colorClass: 'hover:border-slate-400 hover:text-slate-600 hover:bg-slate-100' },
+        { value: 2, text: '2', label: 'Dissatisfied', colorClass: 'hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50' },
+        { value: 1, text: '1', label: 'Very Dissatisfied', colorClass: 'hover:border-rose-400 hover:text-rose-600 hover:bg-rose-50' },
+        { value: 0, text: 'N/A', label: 'Not Applicable', colorClass: 'hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50' }
     ];
 
     // === Dynamic Form Config ===
@@ -2015,30 +2022,31 @@ document.addEventListener('DOMContentLoaded', () => {
         dims.forEach(dim => {
             const dimDiv = document.createElement('div');
             dimDiv.id = `card-${dim.id}`;
-            dimDiv.className = 'dimension-card py-2.5 px-3.5 rounded-lg border border-slate-150 bg-white shadow-xs transition-all duration-200 hover:shadow-sm flex-1 min-h-0 flex flex-col justify-center';
+            dimDiv.className = 'dimension-card py-2.5 px-3 sm:px-3.5 rounded-xl border border-slate-200/80 bg-white shadow-2xs transition-all duration-200 hover:shadow-xs flex-1 min-h-0 flex flex-col justify-center';
             
             let buttonsHtml = '';
             ratingValues.forEach(e => {
+                const isNA = e.value === 0;
                 buttonsHtml += `
                     <button type="button"
-                        class="likert-btn relative flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 font-bold shadow-xs focus:outline-none w-[42px] h-[42px] sm:w-[44px] sm:h-[44px] lg:w-[42px] lg:h-[42px] xl:w-[46px] xl:h-[46px] text-sm sm:text-base lg:text-sm xl:text-base ${e.colorClass} transition-all duration-200 transform cursor-pointer"
-                        data-dimension="${dim.id}" data-value="${e.value}" title="${e.label}">
-                        ${e.value}
+                        class="likert-btn relative flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 font-black shadow-2xs focus:outline-none w-full sm:w-[38px] sm:h-[38px] lg:w-[40px] lg:h-[40px] xl:w-[44px] xl:h-[44px] aspect-square max-w-[46px] mx-auto text-xs sm:text-sm lg:text-xs xl:text-sm ${isNA ? 'text-[10.5px] sm:text-xs font-black' : ''} ${e.colorClass} transition-all duration-150 transform cursor-pointer select-none"
+                        data-dimension="${dim.id}" data-value="${e.value}" title="${e.label}" aria-label="${e.label}">
+                        ${e.text || e.value}
                     </button>
                 `;
             });
 
             dimDiv.innerHTML = `
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-3">
                     <div class="flex items-start flex-1">
                         <div class="flex-1 min-w-0">
-                            <h4 class="font-bold text-slate-800 text-[13.5px] sm:text-[14.5px] lg:text-[14px] xl:text-[14.5px] flex items-center leading-tight">
+                            <h4 class="font-bold text-slate-800 text-[13px] sm:text-[14.5px] lg:text-[14px] xl:text-[14.5px] flex items-center leading-tight">
                                 ${dim.label} <span class="text-red-500 ml-1">*</span>
                             </h4>
-                            <p class="text-[11.5px] sm:text-[12.5px] lg:text-[12px] xl:text-[12.5px] text-slate-500 font-medium leading-normal mt-0.5">${dim.desc}</p>
+                            <p class="text-[11px] sm:text-[12.5px] lg:text-[12px] xl:text-[12.5px] text-slate-500 font-medium leading-normal mt-0.5">${dim.desc}</p>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between w-full sm:w-auto gap-2 sm:gap-2 shrink-0 sm:self-center mt-2 sm:mt-0 pt-2 sm:pt-0 border-t border-slate-100/80 sm:border-0">
+                    <div class="grid grid-cols-6 gap-1.5 sm:flex sm:items-center sm:gap-2 shrink-0 sm:self-center mt-2 sm:mt-0 pt-2 sm:pt-0 border-t border-slate-100 sm:border-0 w-full sm:w-auto">
                         ${buttonsHtml}
                     </div>
                 </div>
@@ -2302,7 +2310,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     });
 
-    function switchToComplaintView(prefilledOffice = '') {
+    function switchToComplaintView(prefilledOffice = '', updateRoute = true) {
         const viewFeedback = document.getElementById('view-feedback');
         const viewComplaint = document.getElementById('view-complaint');
         const compOfficeHeader = document.getElementById('comp-office-header');
@@ -2345,12 +2353,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const today = new Date();
             compDateSigned.textContent = today.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
         }
+
+        if (updateRoute && typeof syncUrlRoute === 'function') {
+            syncUrlRoute('complaint', { office: selectedOffice });
+        }
     }
 
     if (toggleComplaintBtn) {
         toggleComplaintBtn.addEventListener('click', () => {
             const currentOffice = document.getElementById('office-visited')?.value;
-            switchToComplaintView(currentOffice);
+            switchToComplaintView(currentOffice, true);
         });
     }
 
@@ -2359,14 +2371,13 @@ document.addEventListener('DOMContentLoaded', () => {
         qrBannerFileComplaintBtn.addEventListener('click', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const officeParam = urlParams.get('office');
-            switchToComplaintView(officeParam);
+            switchToComplaintView(officeParam, true);
         });
     }
 
     if (backToFeedbackBtn) {
         backToFeedbackBtn.addEventListener('click', () => {
-            viewComplaint.classList.add('section-hidden');
-            viewFeedback.classList.remove('section-hidden');
+            showDefaultView(true);
             window.scrollTo(0,0);
         });
     }
@@ -2497,7 +2508,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function openAdminView() {
+    function openAdminView(updateRoute = true) {
         viewFeedback.classList.add('section-hidden');
         viewComplaint.classList.add('section-hidden');
         privacyModal.classList.add('hidden');
@@ -2526,10 +2537,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const dashScroll = document.getElementById('admin-dashboard-scroll');
         if (dashScroll) dashScroll.scrollTop = 0;
+
+        if (updateRoute && typeof syncUrlRoute === 'function') {
+            syncUrlRoute('admin');
+        }
     }
 
-    function closeAdminView() {
-        showDefaultView();
+    function closeAdminView(updateRoute = true) {
+        showDefaultView(false);
         document.body.classList.remove('admin-layout');
 
         // Show admin login/lock buttons
@@ -2539,6 +2554,10 @@ document.addEventListener('DOMContentLoaded', () => {
         currentUserRole = 'super_admin';
         currentOfficeScope = null;
         updateDashboardRoleUI();
+
+        if (updateRoute && typeof syncUrlRoute === 'function') {
+            syncUrlRoute('feedback');
+        }
     }
 
     async function isCurrentUserAdmin(client) {
@@ -2590,6 +2609,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     sessionStorage.setItem('currentUserRole', 'office');
                     sessionStorage.setItem('currentOfficeAccount', officeData.office_name);
                     return true;
+                }
+
+                // 2b. Check admin_settings (id = 'office_accounts')
+                try {
+                    const { data: sData } = await client
+                        .from('admin_settings')
+                        .select('config')
+                        .eq('id', 'office_accounts')
+                        .maybeSingle();
+                    if (sData && Array.isArray(sData.config)) {
+                        const matched = sData.config.find(a => a.email && a.email.toLowerCase() === authData.user.email.toLowerCase());
+                        if (matched) {
+                            currentUserRole = 'office';
+                            currentOfficeScope = matched.office_name;
+                            sessionStorage.setItem('currentUserRole', 'office');
+                            sessionStorage.setItem('currentOfficeAccount', matched.office_name);
+                            return true;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('admin_settings office verification notice:', e);
                 }
             }
 
@@ -2715,19 +2755,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 3. Check direct office_accounts query or local storage accounts
+        // 3. Check direct database office_accounts table, admin_settings, or local storage accounts
         let matchedOffice = matchedLocalOffice;
-        if (!matchedOffice && client) {
+        if (client) {
             try {
                 const { data: officeRows } = await client.from('office_accounts')
-                    .select('office_name, email')
+                    .select('office_name, email, password')
                     .eq('email', email)
                     .maybeSingle();
                 if (officeRows) {
-                    matchedOffice = officeRows;
+                    if (!officeRows.password || officeRows.password === password) {
+                        matchedOffice = officeRows;
+                    }
                 }
             } catch (e) {
                 console.warn('Direct office_accounts check:', e);
+            }
+
+            if (!matchedOffice) {
+                try {
+                    const { data: sData } = await client
+                        .from('admin_settings')
+                        .select('config')
+                        .eq('id', 'office_accounts')
+                        .maybeSingle();
+                    if (sData && Array.isArray(sData.config)) {
+                        const found = sData.config.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
+                        if (found) {
+                            if (!found.password || found.password === password) {
+                                matchedOffice = found;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Direct admin_settings office check:', e);
+                }
             }
         }
 
@@ -2790,7 +2852,8 @@ document.addEventListener('DOMContentLoaded', () => {
             adminComplaintsModal.classList.remove('hidden');
             adminComplaintsModal.classList.add('flex');
             document.body.style.overflow = 'hidden';
-            renderComplaintsModalList();
+            if (complaintSearchInput) complaintSearchInput.value = '';
+            renderComplaintsModalList(null, true);
         });
     }
 
@@ -2802,9 +2865,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    let complaintSearchTimeout = null;
     if (complaintSearchInput) {
         complaintSearchInput.addEventListener('input', () => {
-            renderComplaintsModalList();
+            if (complaintSearchTimeout) clearTimeout(complaintSearchTimeout);
+            complaintSearchTimeout = setTimeout(() => {
+                renderComplaintsModalList(null, true);
+            }, 100);
         });
     }
 
@@ -2887,17 +2954,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchOfficeAccounts() {
         if (!accountsTableBody) return;
+        accountsTableBody.innerHTML = `<tr><td colspan="3" class="px-4 py-8 text-center text-slate-400 italic"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading accounts from database...</td></tr>`;
+
         let accounts = [];
 
         try {
             const client = await getSupabaseClient();
             if (client) {
-                const { data, error } = await client.from('office_accounts').select('*').order('office_name', { ascending: true });
-                if (!error && data && data.length > 0) {
-                    accounts = data;
-                    saveLocalOfficeAccounts(data);
-                } else if (error) {
-                    console.warn('Supabase office_accounts fetch warning:', error.message);
+                // 1. Try querying dedicated office_accounts table
+                try {
+                    const { data, error } = await client.from('office_accounts').select('*').order('office_name', { ascending: true });
+                    if (!error && data && data.length > 0) {
+                        accounts = data;
+                    } else if (error) {
+                        console.warn('Supabase office_accounts fetch notice:', error.message);
+                    }
+                } catch (e) {
+                    console.warn('office_accounts table query error:', e);
+                }
+
+                // 2. Query fallback from admin_settings table (id = 'office_accounts')
+                try {
+                    const { data: sData } = await client
+                        .from('admin_settings')
+                        .select('config')
+                        .eq('id', 'office_accounts')
+                        .maybeSingle();
+                    if (sData && Array.isArray(sData.config) && sData.config.length > 0) {
+                        const existingEmails = new Set(accounts.map(a => (a.email || '').toLowerCase()));
+                        sData.config.forEach(item => {
+                            if (item.email && !existingEmails.has(item.email.toLowerCase())) {
+                                accounts.push(item);
+                                existingEmails.add(item.email.toLowerCase());
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.warn('admin_settings office_accounts query error:', e);
                 }
             }
         } catch (e) {
@@ -2906,6 +2999,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (accounts.length === 0) {
             accounts = getLocalOfficeAccounts();
+        } else {
+            saveLocalOfficeAccounts(accounts);
         }
 
         accountsTableBody.innerHTML = '';
@@ -2919,10 +3014,23 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.className = 'border-b border-slate-100 last:border-0 hover:bg-slate-50 transition';
             const accId = acc.id || `local_${idx}`;
             tr.innerHTML = `
-                <td class="px-4 py-3 font-semibold text-bisu-blue">${escapeHtml(acc.office_name)}</td>
-                <td class="px-4 py-3 text-slate-700">${escapeHtml(acc.email)}</td>
+                <td class="px-4 py-3 font-semibold text-bisu-blue">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-building-user text-xs text-blue-600"></i>
+                        <span>${escapeHtml(acc.office_name || 'Assigned Office')}</span>
+                    </div>
+                </td>
+                <td class="px-4 py-3 text-slate-700">
+                    <div class="flex items-center gap-1.5 font-mono text-xs">
+                        <i class="fa-solid fa-envelope text-slate-400 text-[11px]"></i>
+                        <span>${escapeHtml(acc.email)}</span>
+                    </div>
+                </td>
                 <td class="px-4 py-3 text-right">
-                    <button onclick="deleteOfficeAccount('${accId}', '${escapeHtml(acc.email)}')" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">Delete</button>
+                    <button onclick="deleteOfficeAccount('${accId}', '${escapeHtml(acc.email)}')" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ml-auto">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                        <span>Delete</span>
+                    </button>
                 </td>
             `;
             accountsTableBody.appendChild(tr);
@@ -2934,6 +3042,16 @@ document.addEventListener('DOMContentLoaded', () => {
             manageAccountsModal.classList.remove('hidden');
             manageAccountsModal.classList.add('flex');
             document.body.style.overflow = 'hidden';
+
+            if (accOfficeSelect && formConfig && formConfig.offices) {
+                const currentVal = accOfficeSelect.value;
+                accOfficeSelect.innerHTML = '<option value="">Select Target Office</option>';
+                formConfig.offices.forEach(office => {
+                    accOfficeSelect.innerHTML += `<option value="${escapeHtml(office)}">${escapeHtml(office)}</option>`;
+                });
+                accOfficeSelect.value = currentVal;
+            }
+
             fetchOfficeAccounts();
         });
     }
@@ -2959,18 +3077,23 @@ document.addEventListener('DOMContentLoaded', () => {
         officeAccountForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const office = accOfficeSelect.value;
-            const email = accEmailInput.value.trim();
+            const email = accEmailInput.value.trim().toLowerCase();
             const password = accPasswordInput.value;
 
             if (!email || !office) {
-                showToast('Please specify an office and email address.', 'warning');
+                showToast('Please specify a target office and email address.', 'warning');
+                return;
+            }
+
+            if (!password || password.length < 6) {
+                showToast('Password must be at least 6 characters.', 'warning');
                 return;
             }
 
             submitAccBtn.disabled = true;
-            submitAccBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
+            submitAccBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving to Database...';
 
-            let authNote = '';
+            let savedToSupabase = false;
             let client = null;
             try {
                 client = await getSupabaseClient();
@@ -2979,9 +3102,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (client) {
+                // 1. Try registering user in Supabase Auth
                 try {
-                    // Try registering user in Supabase Auth
-                    const { error: signUpError } = await client.auth.signUp({ email, password });
+                    const { error: signUpError } = await client.auth.signUp({
+                        email,
+                        password,
+                        options: {
+                            data: {
+                                office_name: office,
+                                role: 'office'
+                            }
+                        }
+                    });
                     if (signUpError) {
                         if (signUpError.message.toLowerCase().includes("already registered")) {
                             const { error: rpcError } = await client.rpc('admin_change_user_password', { target_email: email, new_password: password });
@@ -2990,34 +3122,91 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         } else {
                             console.warn("Auth SignUp Note:", signUpError.message);
-                            authNote = ` (${signUpError.message})`;
                         }
                     }
                 } catch (ae) {
                     console.warn('Auth attempt error:', ae);
                 }
 
+                // 2. Save directly to public.office_accounts table
                 try {
-                    // Check if mapping exists in Supabase table
                     const { data: existing } = await client.from('office_accounts').select('id').eq('email', email).maybeSingle();
                     if (existing) {
-                        await client.from('office_accounts').update({ office_name: office }).eq('id', existing.id);
+                        const { error: updateErr } = await client.from('office_accounts').update({
+                            office_name: office,
+                            password: password,
+                            updated_at: new Date().toISOString()
+                        }).eq('id', existing.id);
+                        if (!updateErr) savedToSupabase = true;
+                        else {
+                            const { error: retryErr } = await client.from('office_accounts').update({
+                                office_name: office
+                            }).eq('id', existing.id);
+                            if (!retryErr) savedToSupabase = true;
+                        }
                     } else {
-                        await client.from('office_accounts').insert([{ email, office_name: office }]);
+                        const { error: insertErr } = await client.from('office_accounts').insert([{
+                            email,
+                            office_name: office,
+                            password: password,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        }]);
+                        if (!insertErr) savedToSupabase = true;
+                        else {
+                            const { error: retryInsertErr } = await client.from('office_accounts').insert([{
+                                email,
+                                office_name: office
+                            }]);
+                            if (!retryInsertErr) savedToSupabase = true;
+                        }
                     }
                 } catch (dbErr) {
                     console.warn('Database write to office_accounts table issue:', dbErr);
                 }
+
+                // 3. Save to admin_settings table (id = 'office_accounts') for resilient fallback
+                try {
+                    let settingsList = [];
+                    const { data: sData } = await client
+                        .from('admin_settings')
+                        .select('config')
+                        .eq('id', 'office_accounts')
+                        .maybeSingle();
+                    if (sData && Array.isArray(sData.config)) {
+                        settingsList = sData.config.filter(a => a.email.toLowerCase() !== email);
+                    }
+                    settingsList.push({
+                        email,
+                        office_name: office,
+                        password,
+                        updated_at: new Date().toISOString()
+                    });
+
+                    const { error: setErr } = await client.from('admin_settings').upsert({
+                        id: 'office_accounts',
+                        config: settingsList,
+                        updated_at: new Date().toISOString()
+                    });
+                    if (!setErr) savedToSupabase = true;
+                } catch (setErr) {
+                    console.warn('Failed to upsert office_accounts to admin_settings:', setErr);
+                }
             }
 
             // Always update local storage cache for immediate reactivity and offline support
-            const currentList = getLocalOfficeAccounts().filter(a => a.email.toLowerCase() !== email.toLowerCase());
-            currentList.push({ id: 'local_' + Date.now(), email, office_name: office });
+            const currentList = getLocalOfficeAccounts().filter(a => a.email.toLowerCase() !== email);
+            currentList.push({ id: 'acc_' + Date.now(), email, office_name: office, password, updated_at: new Date().toISOString() });
             saveLocalOfficeAccounts(currentList);
 
-            showToast(`Office account authorized for ${office}.${authNote ? ' ' + authNote : ''}`, 'success');
+            if (savedToSupabase) {
+                showToast(`Credentials successfully saved to database for ${office} (${email})!`, 'success');
+            } else {
+                showToast(`Office credentials saved locally and authorized for ${office} (${email}).`, 'success');
+            }
+
             officeAccountForm.reset();
-            fetchOfficeAccounts();
+            await fetchOfficeAccounts();
 
             submitAccBtn.disabled = false;
             submitAccBtn.innerHTML = 'Save Credentials';
@@ -3026,9 +3215,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.deleteOfficeAccount = async function(id, email) {
         const result = await Swal.fire({
-            title: 'Delete Account?',
-            html: 'They will lose access to the dashboard immediately.<br><b>This action cannot be undone.</b>',
-            iconHtml: '<div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-sm border border-red-100"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div>',
+            title: 'Delete Office Account?',
+            html: `Are you sure you want to remove <b>${escapeHtml(email)}</b>?<br><span class="text-xs text-slate-500">This account will lose access to the portal immediately.</span>`,
+            iconHtml: '<div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-sm border border-red-100"><i class="fa-solid fa-trash text-2xl"></i></div>',
             customClass: {
                 icon: 'border-0 mb-0 w-full',
                 popup: 'rounded-3xl shadow-2xl font-sans pb-4 border border-slate-100',
@@ -3041,15 +3230,35 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonsStyling: false,
             showCancelButton: true,
             confirmButtonText: '<i class="fa-solid fa-trash"></i> Delete',
-            cancelButtonText: 'Keep Account'
+            cancelButtonText: 'Cancel'
         });
         
         if(!result.isConfirmed) return;
         
         try {
             const client = await getSupabaseClient();
-            if (client && id && !String(id).startsWith('local_')) {
-                await client.from('office_accounts').delete().eq('id', id);
+            if (client) {
+                if (id && !String(id).startsWith('local_') && !String(id).startsWith('acc_')) {
+                    await client.from('office_accounts').delete().eq('id', id);
+                }
+                if (email) {
+                    await client.from('office_accounts').delete().eq('email', email);
+                }
+
+                // Also delete from admin_settings
+                try {
+                    const { data: sData } = await client.from('admin_settings').select('config').eq('id', 'office_accounts').maybeSingle();
+                    if (sData && Array.isArray(sData.config)) {
+                        const updatedConfig = sData.config.filter(a => a.email && a.email.toLowerCase() !== email.toLowerCase());
+                        await client.from('admin_settings').upsert({
+                            id: 'office_accounts',
+                            config: updatedConfig,
+                            updated_at: new Date().toISOString()
+                        });
+                    }
+                } catch (se) {
+                    console.warn('Error removing from admin_settings:', se);
+                }
             }
         } catch (e) {
             console.warn('Error deleting from Supabase:', e);
@@ -3058,13 +3267,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clean local storage cache
         const updated = getLocalOfficeAccounts().filter(a => {
             if (id && String(a.id) === String(id)) return false;
-            if (email && a.email.toLowerCase() === email.toLowerCase()) return false;
+            if (email && a.email && a.email.toLowerCase() === email.toLowerCase()) return false;
             return true;
         });
         saveLocalOfficeAccounts(updated);
 
-        showToast('Account deleted.', 'success');
-        fetchOfficeAccounts();
+        showToast(`Office account ${email} removed.`, 'success');
+        await fetchOfficeAccounts();
     };
 
 
@@ -3191,7 +3400,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Array.isArray(activeDims)) {
             activeDims.forEach(d => {
                 const val = ratingsMap[d.id];
-                dimsText += `  * ${d.label}: ${val !== undefined && val !== null ? val + '/5' : 'N/A'}\n`;
+                let valDisplay = 'N/A';
+                if (val === 0 || val === '0') {
+                    valDisplay = 'N/A (Not Applicable)';
+                } else if (val !== undefined && val !== null) {
+                    valDisplay = `${val}/5`;
+                }
+                dimsText += `  * ${d.label}: ${valDisplay}\n`;
             });
         }
 
@@ -3554,14 +3769,17 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             }
         }
 
-        // Calculate average dynamically
+        // Calculate average dynamically (excluding Not Applicable 0 ratings)
         let sum = 0;
         let count = 0;
         for (let d of activeDims) {
-            sum += currentRatings[d.id];
-            count++;
+            const val = currentRatings[d.id];
+            if (val > 0) {
+                sum += val;
+                count++;
+            }
         }
-        const meanScore = sum / (count || 1);
+        const meanScore = count > 0 ? (sum / count) : 0;
 
         const submitBtn = document.getElementById('submit-feedback-btn');
         submitBtn.disabled = true;
@@ -5367,14 +5585,54 @@ BISU Calape Campus Portal: https://bisu.edu.ph
 
     let currentModalComplaintsData = [];
 
-    function renderComplaintsModalList(cData) {
+    function initComplaintsListDelegation() {
+        const container = document.getElementById('complaints-list-container');
+        if (!container || container._hasDelegatedListener) return;
+        container._hasDelegatedListener = true;
+
+        container.addEventListener('click', (e) => {
+            const copyBtn = e.target.closest('.action-copy-complaint-btn');
+            if (copyBtn) {
+                const id = copyBtn.getAttribute('data-id');
+                const target = (currentModalComplaintsData || []).find(item => String(item.id) === String(id));
+                if (!target) return;
+                const summaryText = `[BISU FORMAL COMPLAINT RECORD]\nDate Filed: ${new Date(target.created_at).toLocaleString()}\nComplainant: ${target.name || 'Anonymous'}\nContact: ${target.contact_details || 'N/A'}\nIncident Date: ${target.date_of_incident || 'N/A'}\nIncident Place: ${target.place_of_incident || 'N/A'}\nAct Complained Of: ${target.details_of_complaint || 'N/A'}\nNarrative Report: ${target.narrative_report || 'N/A'}\nDesired Outcome: ${target.desired_outcome || 'N/A'}`;
+                
+                navigator.clipboard.writeText(summaryText).then(() => {
+                    showToast('Complaint record copied to clipboard!', 'success');
+                }).catch(() => {
+                    showToast('Failed to copy.', 'error');
+                });
+                return;
+            }
+
+            const printBtn = e.target.closest('.action-print-complaint-btn');
+            if (printBtn) {
+                const id = printBtn.getAttribute('data-id');
+                const target = (currentModalComplaintsData || []).find(item => String(item.id) === String(id));
+                if (target) {
+                    printOfficialComplaintForm(target);
+                }
+                return;
+            }
+        });
+    }
+
+    function renderComplaintsModalList(cData, forceRender = false) {
         if (cData) {
             currentModalComplaintsData = cData;
         }
+        const modal = document.getElementById('admin-complaints-modal');
+        if (!forceRender && modal && modal.classList.contains('hidden')) {
+            return; // Skip costly DOM generation if modal is closed
+        }
+
         const container = document.getElementById('complaints-list-container');
         const badgeEl = document.getElementById('complaints-count-badge');
         const searchInput = document.getElementById('complaints-search-input');
         if (!container) return;
+
+        initComplaintsListDelegation();
 
         const list = currentModalComplaintsData || [];
         const searchTerm = (searchInput ? searchInput.value : '').toLowerCase().trim();
@@ -5393,8 +5651,6 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             badgeEl.textContent = `${filtered.length} ${filtered.length === 1 ? 'Complaint' : 'Complaints'}`;
         }
 
-        container.innerHTML = '';
-
         if (filtered.length === 0) {
             container.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-16 px-4 text-center">
@@ -5410,144 +5666,111 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             return;
         }
 
-        filtered.forEach(c => {
+        const cardsHtml = filtered.map(c => {
             const dateStr = new Date(c.created_at).toLocaleString();
-            const el = document.createElement('div');
-            el.className = "bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all space-y-4 relative group";
-            
             const isAnon = !c.name || c.name.trim().toLowerCase() === 'anonymous' || c.name.trim() === '';
             const complainantLabel = isAnon ? 'Anonymous Complainant' : escapeHtml(c.name);
 
-            const printPayload = {
-                type: 'complaint',
-                created_at: c.created_at,
-                complaint_payload: c
-            };
-            const encodedJson = encodeURIComponent(JSON.stringify(printPayload));
+            return `
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3.5 relative">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2.5">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-xl ${isAnon ? 'bg-slate-100 text-slate-600' : 'bg-red-50 text-red-600'} border border-slate-200/80 flex items-center justify-center font-bold text-xs shrink-0">
+                                <i class="fa-solid ${isAnon ? 'fa-user-secret' : 'fa-user'}"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-bold text-slate-800 text-sm leading-snug">${complainantLabel}</h4>
+                                    ${isAnon ? '<span class="bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-slate-200">Anonymous</span>' : ''}
+                                </div>
+                                <p class="text-[11px] text-slate-500 font-normal flex items-center gap-1 mt-0.5">
+                                    <i class="fa-regular fa-clock text-slate-400 text-[10px]"></i>
+                                    <span>Submitted ${dateStr}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 self-end sm:self-center">
+                            <span class="bg-red-50 text-red-700 border border-red-200/80 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span> Urgent Action
+                            </span>
+                            <div class="flex items-center gap-1 bg-slate-50 border border-slate-200/80 rounded-xl p-1">
+                                <button type="button" class="action-copy-complaint-btn p-1.5 text-slate-500 hover:text-slate-800 transition-colors rounded-lg hover:bg-white cursor-pointer" data-id="${c.id}" title="Copy Summary Text">
+                                    <i class="fa-solid fa-copy text-xs"></i>
+                                </button>
+                                <button type="button" class="action-print-complaint-btn p-1.5 text-slate-500 hover:text-bisu-blue transition-colors rounded-lg hover:bg-white cursor-pointer" data-id="${c.id}" title="Print Official Record">
+                                    <i class="fa-solid fa-print text-xs"></i>
+                                </button>
+                                <button type="button" onclick="archiveSingleRecord('${c.id}', 'complaint')" class="p-1.5 text-amber-600 hover:text-amber-800 transition-colors rounded-lg hover:bg-white cursor-pointer" title="Archive Complaint to Vault">
+                                    <i class="fa-solid fa-box-archive text-xs"></i>
+                                </button>
+                                <button type="button" onclick="deleteRecord('${c.id}', 'complaint')" class="p-1.5 text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-white cursor-pointer" title="Delete Complaint">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-            el.innerHTML = `
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-3">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-xl ${isAnon ? 'bg-slate-100 text-slate-600' : 'bg-red-50 text-red-600'} border border-slate-200 flex items-center justify-center font-bold text-sm shrink-0">
-                            <i class="fa-solid ${isAnon ? 'fa-user-secret' : 'fa-user'}"></i>
+                    <!-- Subject / Act Complained Of Callout -->
+                    <div class="bg-red-50/50 border border-red-200/80 rounded-xl p-3 sm:p-3.5">
+                        <div class="text-[10px] uppercase font-bold text-red-700 tracking-wider mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-exclamation text-[11px] text-red-600"></i>
+                            <span>Act / Subject Complained Of</span>
+                        </div>
+                        <p class="text-xs sm:text-sm font-bold text-slate-900 leading-snug">${escapeHtml(c.details_of_complaint || 'No specific subject provided.')}</p>
+                    </div>
+
+                    <!-- Metadata Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 text-xs bg-slate-50/80 p-3 rounded-xl border border-slate-100">
+                        <div>
+                            <span class="text-slate-400 font-semibold block uppercase tracking-wider text-[9px] mb-0.5">Complainant</span>
+                            <span class="font-semibold text-slate-800 flex items-center gap-1.5 truncate text-xs">
+                                <i class="fa-solid fa-user text-slate-400 text-[10px]"></i> ${escapeHtml(c.name || 'Anonymous')}
+                            </span>
                         </div>
                         <div>
-                            <div class="flex items-center gap-2">
-                                <h4 class="font-extrabold text-slate-800 text-base leading-snug">${complainantLabel}</h4>
-                                ${isAnon ? '<span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-200">Anonymous</span>' : ''}
-                            </div>
-                            <p class="text-xs text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
-                                <i class="fa-regular fa-clock text-slate-400 text-[11px]"></i>
-                                <span>Submitted ${dateStr}</span>
-                            </p>
+                            <span class="text-slate-400 font-semibold block uppercase tracking-wider text-[9px] mb-0.5">Contact Details</span>
+                            <span class="font-semibold text-slate-800 flex items-center gap-1.5 truncate text-xs">
+                                <i class="fa-solid fa-phone text-slate-400 text-[10px]"></i> ${escapeHtml(c.contact_details || 'Not provided')}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 font-semibold block uppercase tracking-wider text-[9px] mb-0.5">Incident Date</span>
+                            <span class="font-semibold text-slate-800 flex items-center gap-1.5 truncate text-xs">
+                                <i class="fa-solid fa-calendar text-slate-400 text-[10px]"></i> ${escapeHtml(c.date_of_incident || 'Unspecified')}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 font-semibold block uppercase tracking-wider text-[9px] mb-0.5">Incident Place</span>
+                            <span class="font-semibold text-slate-800 flex items-center gap-1.5 truncate text-xs">
+                                <i class="fa-solid fa-location-dot text-slate-400 text-[10px]"></i> ${escapeHtml(c.place_of_incident || 'Unspecified')}
+                            </span>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 self-end sm:self-center">
-                        <span class="bg-red-50 text-red-700 border border-red-200/80 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-2xs inline-flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span> Urgent Action
+
+                    <!-- Narrative Report -->
+                    <div class="space-y-1">
+                        <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-align-left text-slate-400 text-[10px]"></i> Detailed Narrative Report
                         </span>
-                        <div class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-1">
-                            <button type="button" class="action-copy-complaint-btn p-1.5 text-slate-500 hover:text-slate-800 transition rounded-lg hover:bg-white cursor-pointer" data-id="${c.id}" title="Copy Summary Text">
-                                <i class="fa-solid fa-copy text-xs"></i>
-                            </button>
-                            <button type="button" class="action-print-btn p-1.5 text-slate-500 hover:text-bisu-blue transition rounded-lg hover:bg-white cursor-pointer" data-json="${encodedJson}" title="Print Official Record">
-                                <i class="fa-solid fa-print text-xs"></i>
-                            </button>
-                            <button type="button" onclick="archiveSingleRecord('${c.id}', 'complaint')" class="p-1.5 text-amber-600 hover:text-amber-800 transition rounded-lg hover:bg-white cursor-pointer" title="Archive Complaint to Vault (Zeros Live Dashboard)">
-                                <i class="fa-solid fa-box-archive text-xs"></i>
-                            </button>
-                            <button type="button" onclick="deleteRecord('${c.id}', 'complaint')" class="p-1.5 text-slate-400 hover:text-red-600 transition rounded-lg hover:bg-white cursor-pointer" title="Delete or Archive Complaint">
-                                <i class="fa-solid fa-trash-can text-xs"></i>
-                            </button>
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-wrap font-sans">
+                            ${escapeHtml(c.narrative_report || 'No narrative provided.')}
                         </div>
                     </div>
-                </div>
 
-                <!-- Subject / Act Complained Of Callout -->
-                <div class="bg-gradient-to-r from-red-50/80 to-slate-50 border-l-4 border-red-600 p-3.5 rounded-r-xl border-y border-r border-red-100">
-                    <div class="text-[10px] uppercase font-bold text-red-700 tracking-wider mb-0.5 flex items-center gap-1">
-                        <i class="fa-solid fa-circle-exclamation"></i> Act / Subject Complained Of
-                    </div>
-                    <p class="text-sm font-black text-slate-900">${escapeHtml(c.details_of_complaint || 'No specific subject provided.')}</p>
-                </div>
-
-                <!-- Metadata Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs bg-slate-50/80 p-3.5 rounded-xl border border-slate-100">
-                    <div>
-                        <span class="text-slate-400 font-bold block uppercase tracking-wider text-[9px] mb-0.5">Complainant</span>
-                        <span class="font-bold text-slate-800 flex items-center gap-1.5 truncate">
-                            <i class="fa-solid fa-user text-slate-400 text-[10px]"></i> ${escapeHtml(c.name || 'Anonymous')}
+                    <!-- Desired Outcome -->
+                    <div class="space-y-1">
+                        <span class="text-[11px] font-bold text-rose-800 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-bullseye text-rose-600 text-[10px]"></i> Expected Resolution / Desired Outcome
                         </span>
-                    </div>
-                    <div>
-                        <span class="text-slate-400 font-bold block uppercase tracking-wider text-[9px] mb-0.5">Contact Details</span>
-                        <span class="font-bold text-slate-800 flex items-center gap-1.5 truncate">
-                            <i class="fa-solid fa-phone text-slate-400 text-[10px]"></i> ${escapeHtml(c.contact_details || 'Not provided')}
-                        </span>
-                    </div>
-                    <div>
-                        <span class="text-slate-400 font-bold block uppercase tracking-wider text-[9px] mb-0.5">Incident Date</span>
-                        <span class="font-bold text-slate-800 flex items-center gap-1.5 truncate">
-                            <i class="fa-solid fa-calendar text-slate-400 text-[10px]"></i> ${escapeHtml(c.date_of_incident || 'Unspecified')}
-                        </span>
-                    </div>
-                    <div>
-                        <span class="text-slate-400 font-bold block uppercase tracking-wider text-[9px] mb-0.5">Incident Place</span>
-                        <span class="font-bold text-slate-800 flex items-center gap-1.5 truncate">
-                            <i class="fa-solid fa-location-dot text-slate-400 text-[10px]"></i> ${escapeHtml(c.place_of_incident || 'Unspecified')}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Narrative Report -->
-                <div class="space-y-1">
-                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                        <i class="fa-solid fa-align-left text-slate-400 text-xs"></i> Detailed Narrative Report
-                    </span>
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-wrap font-sans">
-                        ${escapeHtml(c.narrative_report || 'No narrative provided.')}
-                    </div>
-                </div>
-
-                <!-- Desired Outcome -->
-                <div class="space-y-1">
-                    <span class="text-xs font-bold text-rose-800 uppercase tracking-wider flex items-center gap-1.5">
-                        <i class="fa-solid fa-bullseye text-rose-600 text-xs"></i> Expected Resolution / Desired Outcome
-                    </span>
-                    <div class="bg-rose-50/60 p-4 rounded-xl border border-rose-100 text-xs sm:text-sm text-rose-950 font-medium leading-relaxed whitespace-pre-wrap">
-                        ${escapeHtml(c.desired_outcome || 'No specific outcome requested.')}
+                        <div class="bg-rose-50/50 p-3.5 rounded-xl border border-rose-100 text-xs sm:text-sm text-rose-950 font-normal leading-relaxed whitespace-pre-wrap">
+                            ${escapeHtml(c.desired_outcome || 'No specific outcome requested.')}
+                        </div>
                     </div>
                 </div>
             `;
+        }).join('');
 
-            container.appendChild(el);
-        });
-
-        // Attach Copy Complaint Text listener
-        container.querySelectorAll('.action-copy-complaint-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = e.currentTarget.getAttribute('data-id');
-                const target = list.find(item => item.id === id);
-                if (!target) return;
-                const summaryText = `[BISU FORMAL COMPLAINT RECORD]\nDate Filed: ${new Date(target.created_at).toLocaleString()}\nComplainant: ${target.name || 'Anonymous'}\nContact: ${target.contact_details || 'N/A'}\nIncident Date: ${target.date_of_incident || 'N/A'}\nIncident Place: ${target.place_of_incident || 'N/A'}\nAct Complained Of: ${target.details_of_complaint || 'N/A'}\nNarrative Report: ${target.narrative_report || 'N/A'}\nDesired Outcome: ${target.desired_outcome || 'N/A'}`;
-                
-                navigator.clipboard.writeText(summaryText).then(() => {
-                    showToast('Complaint record copied to clipboard!', 'success');
-                }).catch(() => {
-                    showToast('Failed to copy.', 'error');
-                });
-            });
-        });
-
-        // Re-attach print button listener for individual complaints
-        container.querySelectorAll('.action-print-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const row = JSON.parse(decodeURIComponent(e.currentTarget.getAttribute('data-json')));
-                if (row && row.type === 'complaint' && row.complaint_payload) {
-                    printOfficialComplaintForm(row.complaint_payload);
-                }
-            });
-        });
+        container.innerHTML = cardsHtml;
     }
 
     // === Export Functions ===
@@ -9582,6 +9805,89 @@ BISU Calape Campus Portal: https://bisu.edu.ph
     }
 
     // ==========================================
+    // URL ROUTING & HISTORY SYNCHRONIZATION
+    // ==========================================
+    let isHandlingPopState = false;
+
+    function syncUrlRoute(mode, extraParams = {}) {
+        if (isHandlingPopState) return;
+        try {
+            const currentUrl = new URL(window.location.href);
+            const params = currentUrl.searchParams;
+
+            if (mode === 'feedback') {
+                params.delete('mode');
+                params.delete('type');
+            } else if (mode === 'complaint') {
+                params.set('mode', 'complaint');
+                params.delete('type');
+            } else if (mode === 'admin') {
+                params.set('mode', 'admin');
+                params.delete('type');
+            }
+
+            if (extraParams.office) {
+                params.set('office', extraParams.office);
+            }
+
+            const newSearch = params.toString() ? `?${params.toString()}` : '';
+            const newUrl = `${window.location.pathname}${newSearch}${window.location.hash}`;
+            
+            const currentPathWithSearch = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+            if (newUrl !== currentPathWithSearch) {
+                window.history.pushState({ mode, office: extraParams.office || params.get('office') || '' }, '', newUrl);
+            }
+        } catch (e) {
+            console.warn('URL routing sync notice:', e);
+        }
+    }
+
+    function applyRouteFromUrl(isPopState = false) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const modeParam = urlParams.get('mode');
+        const typeParam = urlParams.get('type');
+        const officeParam = urlParams.get('office');
+
+        if (modeParam === 'admin') {
+            const hasLocalAdmin = localStorage.getItem('isLocalAdmin') === 'true' || localStorage.getItem('isLocalOfficeUser') === 'true';
+            if (hasLocalAdmin) {
+                openAdminView(false);
+                if (typeof fetchAdminData === 'function') fetchAdminData();
+            } else {
+                (async () => {
+                    const client = await getSupabaseClient();
+                    if (client) {
+                        const adminAllowed = await isCurrentUserAdmin(client);
+                        if (adminAllowed) {
+                            openAdminView(false);
+                            if (typeof fetchAdminData === 'function') fetchAdminData();
+                            return;
+                        }
+                    }
+                    showToast('Admin login required to view dashboard.', 'info');
+                    if (typeof openAdminLoginModal === 'function') openAdminLoginModal();
+                    showDefaultView(false);
+                })();
+            }
+        } else if (modeParam === 'complaint' || typeParam === 'complaint') {
+            switchToComplaintView(officeParam || '', false);
+        } else {
+            showDefaultView(false);
+        }
+    }
+
+    window.addEventListener('popstate', () => {
+        isHandlingPopState = true;
+        try {
+            applyRouteFromUrl(true);
+        } finally {
+            setTimeout(() => {
+                isHandlingPopState = false;
+            }, 50);
+        }
+    });
+
+    // ==========================================
     // INITIAL URL QUERY PARAMETER ROUTING
     // ==========================================
     function handleUrlQueryParameters() {
@@ -9665,7 +9971,11 @@ BISU Calape Campus Portal: https://bisu.edu.ph
 
         if (modeParam === 'complaint' || typeParam === 'complaint') {
             setTimeout(() => {
-                switchToComplaintView(officeParam);
+                switchToComplaintView(officeParam, false);
+            }, 150);
+        } else if (modeParam === 'admin') {
+            setTimeout(() => {
+                applyRouteFromUrl(false);
             }, 150);
         }
     }

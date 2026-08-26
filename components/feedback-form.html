@@ -227,38 +227,42 @@
         </div>
 
         <!-- SECTION 3: Rating Scale & 8 Dimensions -->
-        <div class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
+        <div class="bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-5 shadow-xs space-y-3.5">
             <!-- Rating Scale Legend Header -->
             <div class="flex flex-col gap-1.5 text-xs sm:text-[13px] font-bold text-black bg-slate-50 p-2.5 sm:p-3.5 rounded-xl border border-slate-200 shadow-2xs">
-                <span class="font-extrabold text-black uppercase tracking-wider text-[12.5px] sm:text-[13.5px] flex items-center" id="t-fb-inst-strong">
+                <span class="font-extrabold text-black uppercase tracking-wider text-[12px] sm:text-[13px] flex items-center" id="t-fb-inst-strong">
                     <i class="fa-solid fa-circle-info text-blue-500 mr-1.5"></i> Rating Scale
                 </span>
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1.5 border-t border-slate-200/70 mt-0.5">
-                    <span class="flex items-center">
-                        <span class="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] flex items-center justify-center rounded-full bg-bisu-gold text-white font-black mr-1.5 text-[10px] sm:text-xs shadow-2xs">5</span> 
-                        <span id="t-fb-vs1" class="text-xs sm:text-[13px] text-slate-700 font-bold">Very Satisfied</span>
+                <div class="grid grid-cols-2 xs:grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-x-4 sm:gap-y-1.5 pt-2 border-t border-slate-200/70 mt-0.5">
+                    <span class="flex items-center bg-white sm:bg-transparent p-1.5 sm:p-0 rounded-lg sm:rounded-none border sm:border-0 border-slate-200/60 shadow-2xs sm:shadow-none">
+                        <span class="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] flex items-center justify-center rounded-full bg-bisu-gold text-white font-black mr-1.5 text-[10px] sm:text-xs shrink-0 shadow-2xs">5</span> 
+                        <span id="t-fb-vs1" class="text-[11.5px] sm:text-[13px] text-slate-700 font-bold leading-tight">Very Satisfied</span>
                     </span>
-                    <span class="flex items-center">
-                        <span class="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] flex items-center justify-center rounded-full bg-bisu-blue text-white font-black mr-1.5 text-[10px] sm:text-xs shadow-2xs">4</span> 
-                        <span id="t-fb-sat" class="text-xs sm:text-[13px] text-slate-700 font-bold">Satisfied</span>
+                    <span class="flex items-center bg-white sm:bg-transparent p-1.5 sm:p-0 rounded-lg sm:rounded-none border sm:border-0 border-slate-200/60 shadow-2xs sm:shadow-none">
+                        <span class="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] flex items-center justify-center rounded-full bg-bisu-blue text-white font-black mr-1.5 text-[10px] sm:text-xs shrink-0 shadow-2xs">4</span> 
+                        <span id="t-fb-sat" class="text-[11.5px] sm:text-[13px] text-slate-700 font-bold leading-tight">Satisfied</span>
                     </span>
-                    <span class="flex items-center">
-                        <span class="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] flex items-center justify-center rounded-full bg-slate-500 text-white font-black mr-1.5 text-[10px] sm:text-xs shadow-2xs">3</span> 
-                        <span id="t-fb-neu" class="text-xs sm:text-[13px] text-slate-700 font-bold">Neutral</span>
+                    <span class="flex items-center bg-white sm:bg-transparent p-1.5 sm:p-0 rounded-lg sm:rounded-none border sm:border-0 border-slate-200/60 shadow-2xs sm:shadow-none">
+                        <span class="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] flex items-center justify-center rounded-full bg-slate-500 text-white font-black mr-1.5 text-[10px] sm:text-xs shrink-0 shadow-2xs">3</span> 
+                        <span id="t-fb-neu" class="text-[11.5px] sm:text-[13px] text-slate-700 font-bold leading-tight">Neutral</span>
                     </span>
-                    <span class="flex items-center">
-                        <span class="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] flex items-center justify-center rounded-full bg-orange-600 text-white font-black mr-1.5 text-[10px] sm:text-xs shadow-2xs">2</span> 
-                        <span id="t-fb-dis" class="text-xs sm:text-[13px] text-slate-700 font-bold">Dissatisfied</span>
+                    <span class="flex items-center bg-white sm:bg-transparent p-1.5 sm:p-0 rounded-lg sm:rounded-none border sm:border-0 border-slate-200/60 shadow-2xs sm:shadow-none">
+                        <span class="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] flex items-center justify-center rounded-full bg-orange-600 text-white font-black mr-1.5 text-[10px] sm:text-xs shrink-0 shadow-2xs">2</span> 
+                        <span id="t-fb-dis" class="text-[11.5px] sm:text-[13px] text-slate-700 font-bold leading-tight">Dissatisfied</span>
                     </span>
-                    <span class="flex items-center">
-                        <span class="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] flex items-center justify-center rounded-full bg-bisu-red text-white font-black mr-1.5 text-[10px] sm:text-xs shadow-2xs">1</span> 
-                        <span id="t-fb-vd1" class="text-xs sm:text-[13px] text-slate-700 font-bold">Very Dissatisfied</span>
+                    <span class="flex items-center bg-white sm:bg-transparent p-1.5 sm:p-0 rounded-lg sm:rounded-none border sm:border-0 border-slate-200/60 shadow-2xs sm:shadow-none">
+                        <span class="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] flex items-center justify-center rounded-full bg-bisu-red text-white font-black mr-1.5 text-[10px] sm:text-xs shrink-0 shadow-2xs">1</span> 
+                        <span id="t-fb-vd1" class="text-[11.5px] sm:text-[13px] text-slate-700 font-bold leading-tight">Very Dissatisfied</span>
+                    </span>
+                    <span class="flex items-center bg-white sm:bg-transparent p-1.5 sm:p-0 rounded-lg sm:rounded-none border sm:border-0 border-slate-200/60 shadow-2xs sm:shadow-none">
+                        <span class="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] flex items-center justify-center rounded-full bg-emerald-600 text-white font-black mr-1.5 text-[9px] sm:text-[10px] shrink-0 shadow-2xs">N/A</span> 
+                        <span id="t-fb-na" class="text-[11.5px] sm:text-[13px] text-slate-700 font-bold leading-tight">Not Applicable</span>
                     </span>
                 </div>
             </div>
 
             <!-- 8 Dimensions List -->
-            <div class="space-y-2.5" id="dimensions-container">
+            <div class="space-y-2 sm:space-y-2.5" id="dimensions-container">
                 <!-- Rendered dynamically via JS -->
             </div>
         </div>

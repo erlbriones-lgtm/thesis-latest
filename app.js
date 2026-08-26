@@ -1,5 +1,8 @@
 // app.js
 
+const OFFICIAL_FEEDBACK_EMAIL = 'fredianmherl.masas@bisu.edu.ph';
+window.OFFICIAL_FEEDBACK_EMAIL = OFFICIAL_FEEDBACK_EMAIL;
+
 document.addEventListener('DOMContentLoaded', () => {
     // === Variables & Elements ===
     const currentDatetimeEl = document.getElementById('current-datetime');
@@ -339,8 +342,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <!-- Document Title Header -->
                     <div class="mt-3 pt-2 border-t border-slate-300 w-full max-w-4xl">
                         <h2 class="text-sm font-bold text-black uppercase tracking-wide text-center">${escapeHtml(title)}</h2>
-                        <div class="flex items-center justify-center gap-6 text-[11px] font-semibold text-slate-700 mt-1">
+                        <div class="flex items-center justify-center flex-wrap gap-4 text-[11px] font-semibold text-slate-700 mt-1">
                             <span>Assessment Period: <strong class="text-black font-bold">${escapeHtml(periodStr)}</strong></span>
+                            ${(currentUserRole === 'office' && currentOfficeScope) ? `<span>&bull; Office Concerned: <strong class="text-black font-bold">${escapeHtml(currentOfficeScope)}</strong></span>` : ''}
                             <span>&bull; ISO 9001:2015 Certified</span>
                         </div>
                     </div>
@@ -577,12 +581,125 @@ document.addEventListener('DOMContentLoaded', () => {
         URL.revokeObjectURL(url);
     }
 
+    async function generateAndDownloadPdfReportFile(filename, subject, bodyStr) {
+        try {
+            if (!window.jspdf || !window.jspdf.jsPDF) return;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+
+            if (window.EMBEDDED_LOGOS) {
+                if (!cachedLogos.bisu && window.EMBEDDED_LOGOS.bisu) cachedLogos.bisu = window.EMBEDDED_LOGOS.bisu;
+                if (!cachedLogos.bagongPilipinas && window.EMBEDDED_LOGOS.bagongPilipinas) cachedLogos.bagongPilipinas = window.EMBEDDED_LOGOS.bagongPilipinas;
+                if (!cachedLogos.tuv && window.EMBEDDED_LOGOS.tuv) cachedLogos.tuv = window.EMBEDDED_LOGOS.tuv;
+            }
+            if (!cachedLogos.bisu) {
+                cachedLogos.bisu = await fetchAsPngDataUrl('/images/BISU_sm.png');
+            }
+            if (!cachedLogos.bagongPilipinas) {
+                cachedLogos.bagongPilipinas = await fetchAsPngDataUrl('/images/BP_sm.png');
+            }
+            if (!cachedLogos.tuv) {
+                cachedLogos.tuv = await fetchAsPngDataUrl('/images/TUV_sm.png');
+            }
+
+            if (cachedLogos.bisu && cachedLogos.bisu.startsWith('data:')) {
+                try { doc.addImage(cachedLogos.bisu, 'PNG', 15, 10, 16, 16); } catch (e) {}
+            }
+            if (cachedLogos.tuv && cachedLogos.tuv.startsWith('data:')) {
+                try { doc.addImage(cachedLogos.tuv, 'PNG', 160, 10, 16, 16); } catch (e) {}
+            }
+            if (cachedLogos.bagongPilipinas && cachedLogos.bagongPilipinas.startsWith('data:')) {
+                try { doc.addImage(cachedLogos.bagongPilipinas, 'PNG', 178, 10, 16, 16); } catch (e) {}
+            }
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text('Republic of the Philippines', 105, 13, { align: 'center' });
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.setTextColor(34, 0, 124);
+            doc.text('BOHOL ISLAND STATE UNIVERSITY', 105, 18, { align: 'center' });
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(15, 23, 42);
+            doc.text('CALAPE CAMPUS', 105, 22.5, { align: 'center' });
+
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(7.5);
+            doc.setTextColor(100, 116, 139);
+            doc.text('San Isidro, Calape, Bohol • Quality Management System', 105, 26.5, { align: 'center' });
+
+            doc.setDrawColor(220, 38, 38);
+            doc.setLineWidth(0.6);
+            doc.line(15, 29.5, 195, 29.5);
+
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(203, 213, 225);
+            doc.setLineWidth(0.3);
+            doc.roundedRect(15, 33, 180, 14, 2, 2, 'FD');
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9.5);
+            doc.setTextColor(22, 18, 117);
+            const titleLines = doc.splitTextToSize((subject || 'OFFICIAL REPORT RECORD').toUpperCase(), 172);
+            doc.text(titleLines, 105, 39, { align: 'center' });
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(100, 116, 139);
+            doc.text(`Official Dispatch Sender: ${OFFICIAL_FEEDBACK_EMAIL} • Generated on ${new Date().toLocaleString()}`, 105, 44, { align: 'center' });
+
+            doc.setFillColor(255, 255, 255);
+            doc.roundedRect(15, 51, 180, 222, 2, 2, 'S');
+
+            doc.setFont('courier', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(15, 23, 42);
+
+            const cleanBody = bodyStr || '';
+            const bodyLines = doc.splitTextToSize(cleanBody, 170);
+
+            let yPos = 57;
+            for (let i = 0; i < bodyLines.length; i++) {
+                if (yPos > 265) {
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(7);
+                    doc.setTextColor(148, 163, 184);
+                    doc.text('Document Code: F-AQA-CSF-001 | Revision: 03 • Bohol Island State University', 105, 288, { align: 'center' });
+
+                    doc.addPage();
+                    yPos = 20;
+                    doc.setFillColor(255, 255, 255);
+                    doc.roundedRect(15, 15, 180, 260, 2, 2, 'S');
+                    doc.setFont('courier', 'normal');
+                    doc.setFontSize(7.5);
+                    doc.setTextColor(15, 23, 42);
+                }
+                doc.text(bodyLines[i], 20, yPos);
+                yPos += 3.8;
+            }
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(148, 163, 184);
+            doc.text('Document Code: F-AQA-CSF-001 | Revision: 03 • Bohol Island State University • Quality Management System', 105, 288, { align: 'center' });
+
+            const finalPdfName = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+            doc.save(finalPdfName);
+        } catch (err) {
+            console.warn('PDF export error:', err);
+        }
+    }
+
     function generateAndDownloadTxtFile(filename, bodyStr) {
         const blob = new Blob([bodyStr], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const baseName = filename ? filename.replace(/\.doc$/, '') : 'BISU_Official_Document';
+        const baseName = filename ? filename.replace(/\.doc$/, '').replace(/\.pdf$/, '') : 'BISU_Official_Document';
         a.download = baseName.endsWith('.txt') ? baseName : baseName + '.txt';
         document.body.appendChild(a);
         a.click();
@@ -590,77 +707,127 @@ document.addEventListener('DOMContentLoaded', () => {
         URL.revokeObjectURL(url);
     }
 
-    function forwardEmailReport(targetEmail, subject, bodyStr, customHtml, customFilename) {
-        const docFileName = customFilename || `BISU_Document_${subject.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30)}.doc`;
-        
-        // Auto-generate and download the Word document file (.doc)
-        generateAndDownloadDocFile(docFileName, subject, bodyStr, customHtml);
+    function forwardEmailReport(targetEmail, subject, bodyStr, customHtml, customFilename, selectedFormat = 'pdf') {
+        const rawBase = customFilename ? customFilename.replace(/\.(doc|docx|pdf|txt)$/i, '') : `BISU_Report_${subject.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30)}`;
+        const isPdf = selectedFormat === 'pdf';
+        const activeFileName = isPdf ? `${rawBase}.pdf` : `${rawBase}.doc`;
 
-        const emailNoticeBody = `[OFFICIAL DOCUMENT FILE ATTACHMENT NOTICE]\n` +
-                                `An official document file ("${docFileName}") has been automatically generated and downloaded to your Downloads folder.\n` +
-                                `Please attach the downloaded document file to this email.\n\n` +
+        const emailNoticeBody = `[OFFICIAL BISU CALAPE REPORT DISPATCH]\n` +
+                                `Official Sender: ${OFFICIAL_FEEDBACK_EMAIL}\n` +
+                                `Destination Recipient: ${targetEmail}\n` +
+                                `Report Format: ${isPdf ? 'PDF Document (.pdf)' : 'Word Document (.docx / .doc)'}\n` +
+                                `Generated Reference: ${activeFileName}\n\n` +
                                 `==================================================\n` +
                                 bodyStr;
 
         const encodedSubject = encodeURIComponent(subject);
         const encodedBody = encodeURIComponent(emailNoticeBody);
-        const mailtoUrl = `mailto:${encodeURIComponent(targetEmail)}?subject=${encodedSubject}&body=${encodedBody}`;
-        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(targetEmail)}&su=${encodedSubject}&body=${encodedBody}`;
-
-        try {
-            window.location.href = mailtoUrl;
-        } catch (e) {
-            console.error('Mailto trigger error:', e);
-        }
+        const mailtoUrl = `mailto:${encodeURIComponent(targetEmail)}?cc=${encodeURIComponent(OFFICIAL_FEEDBACK_EMAIL)}&subject=${encodedSubject}&body=${encodedBody}`;
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(targetEmail)}&cc=${encodeURIComponent(OFFICIAL_FEEDBACK_EMAIL)}&su=${encodedSubject}&body=${encodedBody}`;
 
         Swal.fire({
-            title: 'Document File Ready to Email!',
+            title: 'Send Report Document',
             html: `
                 <div class="text-center font-sans space-y-3">
-                    <div class="bg-slate-50 border border-slate-200 p-3 rounded-2xl text-xs text-slate-600">
-                        Destination Recipient: <strong class="text-bisu-blue font-bold text-sm block">${escapeHtml(targetEmail)}</strong>
-                    </div>
-
-                    <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl text-left flex items-start gap-3">
-                        <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold shrink-0 text-base">
-                            <i class="fa-solid fa-file-word"></i>
+                    <div class="bg-slate-50 border border-slate-200 p-3 rounded-2xl text-xs text-slate-600 text-left space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400 font-bold uppercase text-[10px]">Recipient:</span>
+                            <strong class="text-bisu-blue font-bold text-xs truncate max-w-[240px]">${escapeHtml(targetEmail)}</strong>
                         </div>
-                        <div class="text-xs">
-                            <span class="font-extrabold text-emerald-900 block mb-0.5">Document File (.doc) Downloaded</span>
-                            <span class="text-emerald-800 leading-snug block">
-                                <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-emerald-200 text-emerald-900 font-bold">${escapeHtml(docFileName)}</code> has been saved to your downloads folder. Attach this document file to your email recipient.
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400 font-bold uppercase text-[10px]">Format:</span>
+                            <span class="font-extrabold text-[11px] ${isPdf ? 'text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200' : 'text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200'}">
+                                <i class="fa-solid ${isPdf ? 'fa-file-pdf' : 'fa-file-word'} mr-1"></i> ${isPdf ? 'PDF Document (.pdf)' : 'Word Document (.docx / .doc)'}
                             </span>
                         </div>
                     </div>
 
-                    <div class="flex flex-col gap-2 pt-1">
-                        <a href="${gmailUrl}" target="_blank" rel="noopener noreferrer" class="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition decoration-none">
-                            <i class="fa-brands fa-google text-sm"></i> Open Gmail Web & Attach Document
-                        </a>
+                    <!-- Step-by-Step Info Box -->
+                    <div class="bg-amber-50 border border-amber-200 p-2.5 rounded-xl text-left flex items-start gap-2 text-[11px] text-amber-900">
+                        <i class="fa-solid fa-circle-info text-amber-600 mt-0.5 text-xs shrink-0"></i>
+                        <span>
+                            Clicking below downloads your <b>${isPdf ? '.pdf' : '.doc'}</b> file and opens Gmail with the recipient, CC, and report text ready. Just drag or attach the downloaded file into Gmail!
+                        </span>
+                    </div>
 
-                        <button id="btn-copy-forward-text" type="button" class="w-full py-2 px-3 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition border border-slate-200 cursor-pointer">
-                            <i class="fa-regular fa-copy text-sm"></i> Copy Document Text Content
+                    <!-- Direct Send Actions -->
+                    <div class="flex flex-col gap-2 pt-1">
+                        <button id="btn-open-gmail-with-file" type="button" class="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition cursor-pointer">
+                            <i class="fa-brands fa-google text-sm"></i> Download ${isPdf ? 'PDF' : 'DOCX'} & Open Gmail
+                        </button>
+
+                        <button id="btn-open-mailto-with-file" type="button" class="w-full py-2.5 px-4 bg-[#22007c] hover:bg-blue-900 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition cursor-pointer">
+                            <i class="fa-solid fa-envelope text-sm"></i> Download ${isPdf ? 'PDF' : 'DOCX'} & Open Mail App
+                        </button>
+                    </div>
+
+                    <!-- Secondary Tools -->
+                    <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 mt-2">
+                        <button id="btn-ondemand-download" type="button" class="py-2 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition border border-slate-200 cursor-pointer">
+                            <i class="fa-solid fa-download text-xs ${isPdf ? 'text-rose-600' : 'text-blue-600'}"></i> Re-download File
+                        </button>
+
+                        <button id="btn-copy-forward-text" type="button" class="py-2 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition border border-slate-200 cursor-pointer">
+                            <i class="fa-regular fa-copy text-xs text-slate-500"></i> Copy Content
                         </button>
                     </div>
                 </div>
             `,
-            iconHtml: '<div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-sm border border-emerald-100"><i class="fa-solid fa-paper-plane text-2xl"></i></div>',
+            iconHtml: '<div class="w-14 h-14 bg-blue-50 text-bisu-blue rounded-full flex items-center justify-center mx-auto mb-1 shadow-sm border border-blue-100"><i class="fa-solid fa-paper-plane text-xl"></i></div>',
             customClass: {
                 icon: 'border-0 mb-0 w-full',
-                popup: 'rounded-3xl shadow-2xl font-sans pb-5 border border-slate-100 max-w-lg',
-                title: 'text-2xl font-black text-slate-800 tracking-tight mt-2',
-                confirmButton: 'bg-bisu-blue hover:bg-bisu-blue-dark text-white font-bold rounded-xl px-8 py-3 shadow-md transition-all mt-4'
+                popup: 'rounded-3xl shadow-2xl font-sans pb-4 border border-slate-100 max-w-md',
+                title: 'text-xl font-black text-slate-800 tracking-tight mt-1',
+                confirmButton: 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl px-6 py-2.5 text-xs shadow-2xs transition-all mt-2 cursor-pointer'
             },
-            confirmButtonText: 'Done',
+            confirmButtonText: 'Done / Close',
             buttonsStyling: false,
             didOpen: () => {
+                function triggerFileDownload() {
+                    if (isPdf) {
+                        generateAndDownloadPdfReportFile(activeFileName, subject, bodyStr);
+                    } else {
+                        generateAndDownloadDocFile(activeFileName, subject, bodyStr, customHtml);
+                    }
+                }
+
+                const gmailBtn = document.getElementById('btn-open-gmail-with-file');
+                if (gmailBtn) {
+                    gmailBtn.addEventListener('click', () => {
+                        triggerFileDownload();
+                        showToast(`Downloaded ${activeFileName}. Opening Gmail...`, 'info');
+                        setTimeout(() => {
+                            window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+                        }, 400);
+                    });
+                }
+
+                const mailtoBtn = document.getElementById('btn-open-mailto-with-file');
+                if (mailtoBtn) {
+                    mailtoBtn.addEventListener('click', () => {
+                        triggerFileDownload();
+                        showToast(`Downloaded ${activeFileName}. Opening mail app...`, 'info');
+                        setTimeout(() => {
+                            window.location.href = mailtoUrl;
+                        }, 400);
+                    });
+                }
+
+                const downloadBtn = document.getElementById('btn-ondemand-download');
+                if (downloadBtn) {
+                    downloadBtn.addEventListener('click', () => {
+                        triggerFileDownload();
+                        showToast(`${isPdf ? 'PDF' : 'Word'} Document downloaded!`, 'success');
+                    });
+                }
+
                 const copyBtn = document.getElementById('btn-copy-forward-text');
                 if (copyBtn) {
                     copyBtn.addEventListener('click', () => {
                         navigator.clipboard.writeText(bodyStr).then(() => {
                             showToast('Report text copied to clipboard!', 'success');
                         }).catch(() => {
-                            showToast('Could not copy text.', 'error');
+                            showToast('Failed to copy text.', 'error');
                         });
                     });
                 }
@@ -866,99 +1033,198 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.sendReportToService = async function(reportType) {
+        if (currentUserRole === 'office') {
+            Swal.fire({
+                title: 'Office Portal Notice',
+                text: 'Forwarding and sending reports via email is reserved for campus quality assurance and administrator accounts. Office portals can view, print, and export reports directly.',
+                icon: 'info',
+                confirmButtonColor: '#1e1b4b'
+            });
+            return;
+        }
+
         let inputOptions = {};
+        const recipEmails = [];
 
         if (typeof formConfig !== 'undefined' && Array.isArray(formConfig.recipients)) {
             formConfig.recipients.forEach(r => {
                 const parts = r.split('|');
                 if (parts.length >= 2) {
-                    inputOptions[parts[1].trim()] = `${parts[0].trim()} (${parts[1].trim()})`;
+                    const label = parts[0].trim();
+                    const email = parts[1].trim();
+                    inputOptions[email] = `${label} (${email})`;
+                    if (email && !recipEmails.includes(email)) recipEmails.push(email);
                 } else if (r.trim() !== '') {
-                    inputOptions[r.trim()] = r.trim();
+                    const email = r.trim();
+                    inputOptions[email] = email;
+                    if (email && !recipEmails.includes(email)) recipEmails.push(email);
                 }
             });
         }
 
-        const client = await getSupabaseClient();
-        if (client) {
-            const { data: accounts } = await client.from('office_accounts')
-                                                   .select('office_name, email')
-                                                   .order('office_name', { ascending: true });
-            if (accounts && accounts.length > 0) {
-                accounts.forEach(acc => {
-                    if (acc.email) {
-                        inputOptions[acc.email] = `${acc.office_name} (${acc.email})`;
-                    }
-                });
-            }
+        if (recipEmails.length > 1) {
+            inputOptions['__ALL_RECIPIENTS__'] = `📢 Send to All Configured Recipients (${recipEmails.join(', ')})`;
         }
 
-        if (Object.keys(inputOptions).length === 1) {
-            inputOptions["qa@bisu.edu.ph"] = "Campus Quality Assurance Service (qa@bisu.edu.ph)";
+        let allAccounts = [];
+        try {
+            const client = await getSupabaseClient();
+            if (client) {
+                const { data: accounts } = await client.from('office_accounts')
+                                                       .select('office_name, email')
+                                                       .order('office_name', { ascending: true });
+                if (accounts && accounts.length > 0) {
+                    allAccounts = accounts;
+                }
+            }
+        } catch (e) {
+            console.warn('office_accounts fetch error for recipient picker:', e);
         }
+
+        if (allAccounts.length === 0 && typeof getLocalOfficeAccounts === 'function') {
+            allAccounts = getLocalOfficeAccounts();
+        }
+
+        if (allAccounts && allAccounts.length > 0) {
+            allAccounts.forEach(acc => {
+                if (acc.email && !inputOptions[acc.email]) {
+                    inputOptions[acc.email] = `${acc.office_name} (${acc.email})`;
+                }
+            });
+        }
+
+        if (Object.keys(inputOptions).length === 0) {
+            inputOptions[OFFICIAL_FEEDBACK_EMAIL] = `Campus Quality Assurance & Feedback Head (${OFFICIAL_FEEDBACK_EMAIL})`;
+        }
+        inputOptions['__CUSTOM__'] = '➕ Other / Enter Custom Destination Email...';
+
+        let optionsHtml = '';
+        Object.keys(inputOptions).forEach(val => {
+            optionsHtml += `<option value="${escapeHtml(val)}">${escapeHtml(inputOptions[val])}</option>`;
+        });
 
         Swal.fire({
-            title: `Forward ${reportType}`,
-            html: `Select the destination email account to receive <b>"${escapeHtml(reportType)}"</b>:`,
-            iconHtml: '<div class="w-16 h-16 bg-blue-50 text-bisu-blue rounded-full flex items-center justify-center mx-auto mb-2 shadow-sm border border-blue-100"><i class="fa-solid fa-paper-plane text-2xl"></i></div>',
+            title: `Send ${reportType}`,
+            html: `
+                <div class="text-left font-sans space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            <i class="fa-solid fa-envelope mr-1 text-bisu-blue"></i> Destination Recipient
+                        </label>
+                        <select id="swal-dispatch-recipient" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-xl focus:ring-1 focus:ring-bisu-blue focus:border-bisu-blue block p-3 font-medium outline-none cursor-pointer">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+
+                    <div id="swal-custom-email-wrap" class="hidden">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            <i class="fa-solid fa-at mr-1 text-bisu-blue"></i> Custom Email Address
+                        </label>
+                        <input type="email" id="swal-custom-email" placeholder="e.g. director.qa@bisu.edu.ph" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl focus:ring-1 focus:ring-bisu-blue focus:border-bisu-blue block p-3 outline-none" />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            <i class="fa-solid fa-file-export mr-1 text-bisu-blue"></i> Choose Document Format to Send
+                        </label>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <label id="label-format-pdf" class="flex items-center gap-2.5 p-3 rounded-xl border-2 border-rose-500 bg-rose-50/70 text-slate-800 cursor-pointer transition select-none shadow-2xs">
+                                <input type="radio" name="swal-dispatch-format" value="pdf" checked class="text-rose-600 focus:ring-rose-500" />
+                                <div class="min-w-0 text-left">
+                                    <span class="font-extrabold text-xs text-rose-950 block"><i class="fa-solid fa-file-pdf text-rose-600 mr-1"></i> PDF (.pdf)</span>
+                                    <span class="text-[10px] text-slate-500 font-medium block">Standard Document</span>
+                                </div>
+                            </label>
+
+                            <label id="label-format-docx" class="flex items-center gap-2.5 p-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-800 cursor-pointer transition select-none hover:border-blue-300">
+                                <input type="radio" name="swal-dispatch-format" value="docx" class="text-blue-600 focus:ring-blue-500" />
+                                <div class="min-w-0 text-left">
+                                    <span class="font-extrabold text-xs text-slate-900 block"><i class="fa-solid fa-file-word text-blue-600 mr-1"></i> Word (.docx)</span>
+                                    <span class="text-[10px] text-slate-500 font-medium block">Editable Document</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50/80 border border-blue-200/80 rounded-xl p-2.5 text-[11px] text-blue-900 flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-bisu-blue text-sm shrink-0"></i>
+                        <span>Sender: <b>${OFFICIAL_FEEDBACK_EMAIL}</b></span>
+                    </div>
+                </div>
+            `,
+            iconHtml: '<div class="w-14 h-14 bg-blue-50 text-bisu-blue rounded-full flex items-center justify-center mx-auto mb-1 shadow-sm border border-blue-100"><i class="fa-solid fa-paper-plane text-xl"></i></div>',
             customClass: {
                 icon: 'border-0 mb-0 w-full',
-                popup: 'rounded-3xl shadow-2xl font-sans pb-4 border border-slate-100',
-                title: 'text-2xl font-black text-slate-800 tracking-tight mt-2',
-                htmlContainer: 'text-slate-500 font-medium mt-2 mb-6 text-sm',
-                input: 'w-[90%] mx-auto bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-xl focus:ring-0 focus:border-bisu-blue block p-3.5 shadow-sm transition-colors outline-none cursor-pointer',
-                actions: 'w-full flex justify-center gap-3 mt-6',
-                confirmButton: 'bg-bisu-blue hover:bg-bisu-blue-dark text-white font-bold rounded-xl px-8 py-3.5 shadow-md transition-all w-full max-w-[160px] flex items-center justify-center gap-2',
-                cancelButton: 'bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-xl px-8 py-3.5 transition-all border border-slate-200 w-full max-w-[150px] shadow-sm',
+                popup: 'rounded-3xl shadow-2xl font-sans pb-5 border border-slate-100 max-w-md',
+                title: 'text-xl font-black text-slate-800 tracking-tight mt-1',
+                actions: 'w-full flex justify-center gap-3 mt-4',
+                confirmButton: 'bg-bisu-blue hover:bg-bisu-blue-dark text-white font-bold rounded-xl px-7 py-3 shadow-md transition-all text-xs flex items-center justify-center gap-2 cursor-pointer',
+                cancelButton: 'bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-xl px-5 py-3 transition-all border border-slate-200 text-xs shadow-2xs cursor-pointer',
             },
             buttonsStyling: false,
-            input: 'select',
-            inputOptions: inputOptions,
-            inputPlaceholder: 'Select recipient email...',
             showCancelButton: true,
-            confirmButtonText: '<i class="fa-solid fa-paper-plane"></i> Next',
+            confirmButtonText: '<i class="fa-solid fa-paper-plane"></i> Send Report',
             cancelButtonText: 'Cancel',
-            inputValidator: (value) => {
-                return new Promise((resolve) => {
-                    if (value !== '') {
-                        resolve();
-                    } else {
-                        resolve('You need to select or enter a recipient.');
-                    }
+            didOpen: () => {
+                const selectEl = document.getElementById('swal-dispatch-recipient');
+                const customWrap = document.getElementById('swal-custom-email-wrap');
+                const pdfLabel = document.getElementById('label-format-pdf');
+                const docxLabel = document.getElementById('label-format-docx');
+                const formatRadios = document.querySelectorAll('input[name="swal-dispatch-format"]');
+
+                if (selectEl && customWrap) {
+                    selectEl.addEventListener('change', () => {
+                        if (selectEl.value === '__CUSTOM__') {
+                            customWrap.classList.remove('hidden');
+                            document.getElementById('swal-custom-email')?.focus();
+                        } else {
+                            customWrap.classList.add('hidden');
+                        }
+                    });
+                }
+
+                formatRadios.forEach(radio => {
+                    radio.addEventListener('change', () => {
+                        if (radio.value === 'pdf') {
+                            pdfLabel.className = 'flex items-center gap-2.5 p-3 rounded-xl border-2 border-rose-500 bg-rose-50/70 text-slate-800 cursor-pointer transition select-none shadow-2xs';
+                            docxLabel.className = 'flex items-center gap-2.5 p-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-800 cursor-pointer transition select-none hover:border-blue-300';
+                        } else {
+                            docxLabel.className = 'flex items-center gap-2.5 p-3 rounded-xl border-2 border-blue-500 bg-blue-50/70 text-slate-800 cursor-pointer transition select-none shadow-2xs';
+                            pdfLabel.className = 'flex items-center gap-2.5 p-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-800 cursor-pointer transition select-none hover:border-rose-300';
+                        }
+                    });
                 });
+            },
+            preConfirm: () => {
+                const selectEl = document.getElementById('swal-dispatch-recipient');
+                const customInput = document.getElementById('swal-custom-email');
+                const selectedFormat = document.querySelector('input[name="swal-dispatch-format"]:checked')?.value || 'pdf';
+
+                if (!selectEl) return false;
+                let chosenRecipient = selectEl.value;
+
+                if (chosenRecipient === '__CUSTOM__') {
+                    const customVal = (customInput?.value || '').trim();
+                    if (!customVal || !customVal.includes('@')) {
+                        Swal.showValidationMessage('Please enter a valid email address.');
+                        return false;
+                    }
+                    chosenRecipient = customVal;
+                } else if (chosenRecipient === '__ALL_RECIPIENTS__') {
+                    chosenRecipient = recipEmails.join(', ');
+                }
+
+                return { recipient: chosenRecipient, format: selectedFormat };
             }
-        }).then(async (result) => {
+        }).then((result) => {
             if (!result.isConfirmed || !result.value) return;
 
-            let targetEmail = result.value;
-
-            if (targetEmail === '__CUSTOM__') {
-                const customRes = await Swal.fire({
-                    title: 'Enter Destination Gmail / Email',
-                    html: 'Type the email address where you want to send this report:',
-                    input: 'email',
-                    inputPlaceholder: 'e.g. user@gmail.com',
-                    showCancelButton: true,
-                    confirmButtonText: '<i class="fa-solid fa-paper-plane"></i> Forward Report',
-                    cancelButtonText: 'Cancel',
-                    customClass: {
-                        popup: 'rounded-3xl shadow-2xl font-sans',
-                        input: 'w-[90%] mx-auto border border-slate-300 rounded-xl p-3.5 text-sm focus:ring-bisu-blue focus:border-bisu-blue'
-                    },
-                    inputValidator: (val) => {
-                        if (!val || !val.trim() || !val.includes('@')) {
-                            return 'Please enter a valid email address.';
-                        }
-                    }
-                });
-
-                if (!customRes.isConfirmed || !customRes.value) return;
-                targetEmail = customRes.value.trim();
-            }
-
+            const { recipient, format } = result.value;
             const reportData = getReportEmailData(reportType);
             const safeReportType = (reportType || 'Report').replace(/[^a-zA-Z0-9]/g, '_');
-            forwardEmailReport(targetEmail, reportData.subject, reportData.bodyStr, null, `BISU_${safeReportType}_Record.doc`);
+            const customFilename = `BISU_${safeReportType}_Record`;
+
+            forwardEmailReport(recipient, reportData.subject, reportData.bodyStr, null, customFilename, format);
         });
     };
 
@@ -1014,23 +1280,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastFetchedComplaints = [];
     let lastFilteredFeedbacks = [];
     let lastFilteredComplaints = [];
+    let currentUserRole = 'super_admin'; // 'super_admin' or 'office'
+    let currentOfficeScope = null; // null for super_admin, or office name string like 'Library'
     
     function renderRecipientsList() {
         if (!configRecipientsList) return;
         configRecipientsList.innerHTML = '';
         tempRecipients.forEach((recip, idx) => {
             const div = document.createElement('div');
-            div.className = 'bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm relative';
+            div.className = 'bg-white border border-slate-200 rounded-xl p-4 shadow-xs relative transition-all hover:border-blue-300';
             div.innerHTML = `
-                <button type="button" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition" onclick="removeTempRecipient(${idx})" title="Remove"><i class="fa-solid fa-trash"></i></button>
+                <button type="button" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition cursor-pointer" onclick="removeTempRecipient(${idx})" title="Remove"><i class="fa-solid fa-trash"></i></button>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mr-6">
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Office / Title</label>
-                        <input type="text" value="${recip.name}" onchange="updateTempRecipient(${idx}, 'name', this.value)" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:border-bisu-blue focus:ring-1 focus:ring-bisu-blue outline-none transition-shadow bg-white" placeholder="e.g. Quality Assurance">
+                        <input type="text" value="${escapeHtml(recip.name)}" oninput="updateTempRecipient(${idx}, 'name', this.value)" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:border-bisu-blue focus:ring-1 focus:ring-bisu-blue outline-none transition-shadow bg-white" placeholder="e.g. Campus Quality Assurance">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Email Address</label>
-                        <input type="email" value="${recip.email}" onchange="updateTempRecipient(${idx}, 'email', this.value)" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:border-bisu-blue focus:ring-1 focus:ring-bisu-blue outline-none transition-shadow bg-white" placeholder="e.g. qa@bisu.edu.ph">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Email Address (Gmail / Institutional)</label>
+                        <input type="email" value="${escapeHtml(recip.email)}" oninput="updateTempRecipient(${idx}, 'email', this.value)" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:border-bisu-blue focus:ring-1 focus:ring-bisu-blue outline-none transition-shadow bg-white font-medium" placeholder="e.g. fredianmherl.masas@bisu.edu.ph">
                     </div>
                 </div>
             `;
@@ -1093,6 +1361,8 @@ document.addEventListener('DOMContentLoaded', () => {
             "t-modal-check": "I agree to the terms and authorize BISU to process my feedback.",
             "t-modal-btn": "Proceed to Form",
             "t-fb-title": "Feedback Form",
+            "t-fb-name": `Name <span class="text-[10px] text-slate-400 font-normal italic">(Opt)</span>`,
+            "t-fb-email": `Email Address <span class="text-[10px] text-slate-400 font-normal italic">(Opt - for copy)</span>`,
             "t-fb-office": `Office Visited <span class="text-red-500">*</span>`,
             "t-sel-office": "Select Office",
             "t-fb-service": `Service Availed <span class="text-red-500">*</span>`,
@@ -1155,7 +1425,23 @@ document.addEventListener('DOMContentLoaded', () => {
             "t-cc3-opt1": "Helped very much",
             "t-cc3-opt2": "Somewhat helped",
             "t-cc3-opt3": "Did not help",
-            "t-cc3-opt4": "N/A"
+            "t-cc3-opt4": "N/A",
+            "t-thank-title": "Thank you for your feedback!!",
+            "t-thank-desc": "Your feedback has been successfully submitted and recorded.",
+            "t-thank-sub": "Thank you for taking the time to help us enhance the quality and delivery of services at Bohol Island State University.",
+            "t-thank-btn-done": "Done",
+            "t-thank-btn-another": "Submit Another Feedback",
+            "t-fb-date": `Date <span class="text-red-500">*</span>`,
+            "t-fb-time": `Time <span class="text-red-500">*</span>`,
+            "t-email-ask": "Would you like to email a copy of your response?",
+            "t-email-opt-yes": "Yes, email my copy",
+            "t-email-opt-no": "No, thanks",
+            "t-email-placeholder": "Enter your email address...",
+            "t-email-send-btn": "Send Email Receipt",
+            "t-email-copy-btn": "Copy Summary Text",
+            "t-email-success-open": "Opening your email application with your feedback receipt...",
+            "t-email-copied": "Response summary copied to clipboard!",
+            "t-email-invalid": "Please enter a valid email address."
         },
         tl: {
             "t-header-sub": "Kampus ng Calape - Kasiyahan ng Kostumer",
@@ -1164,6 +1450,8 @@ document.addEventListener('DOMContentLoaded', () => {
             "t-modal-check": "Sumasang-ayon ako sa mga tuntunin at pinahihintulutan ang BISU na iproseso ang aking feedback.",
             "t-modal-btn": "Magpatuloy sa Form",
             "t-fb-title": "Form ng Feedback",
+            "t-fb-name": "Pangalan (Opsyonal)",
+            "t-fb-email": "Email Address (Opsyonal - para sa kopya)",
             "t-fb-office": `Opisinang Binisita <span class="text-red-500">*</span>`,
             "t-sel-office": "Pumili ng Opisina",
             "t-fb-service": `Serbisyong Nakuha <span class="text-red-500">*</span>`,
@@ -1226,7 +1514,23 @@ document.addEventListener('DOMContentLoaded', () => {
             "t-cc3-opt1": "Malaki ang naitulong",
             "t-cc3-opt2": "Medyo nakatulong",
             "t-cc3-opt3": "Hindi nakatulong",
-            "t-cc3-opt4": "N/A"
+            "t-cc3-opt4": "N/A",
+            "t-thank-title": "Maraming salamat sa iyong feedback!!",
+            "t-thank-desc": "Matagumpay na naitala at naisumite ang iyong feedback.",
+            "t-thank-sub": "Salamat sa paglalaan ng oras upang tulungan kaming mapabuti ang kalidad ng mga serbisyo sa Bohol Island State University.",
+            "t-thank-btn-done": "Tapos Na",
+            "t-thank-btn-another": "Magsumite ng Isa Pa",
+            "t-fb-date": `Petsa <span class="text-red-500">*</span>`,
+            "t-fb-time": `Oras <span class="text-red-500">*</span>`,
+            "t-email-ask": "Nais mo bang i-email ang kopya ng iyong tugon?",
+            "t-email-opt-yes": "Oo, i-email ang kopya",
+            "t-email-opt-no": "Hindi na, salamat",
+            "t-email-placeholder": "Ilagay ang iyong email address...",
+            "t-email-send-btn": "Ipadala ang Resibo sa Email",
+            "t-email-copy-btn": "Kopyahin ang Buod",
+            "t-email-success-open": "Binubuksan ang iyong email app kasama ang resibo ng feedback...",
+            "t-email-copied": "Nakopya ang buod ng tugon sa clipboard!",
+            "t-email-invalid": "Mangyaring maglagay ng wastong email address."
         },
         ceb: {
             "t-header-sub": "Kampus sa Calape - Katagbawan sa Kustomer",
@@ -1235,6 +1539,8 @@ document.addEventListener('DOMContentLoaded', () => {
             "t-modal-check": "Miuyon ako sa mga kondisyon ug gitugotan ang BISU sa pagproseso sa akong feedback.",
             "t-modal-btn": "Ipadayon sa Porma",
             "t-fb-title": "Porma sa Feedback",
+            "t-fb-name": "Pangalan (Opsiyonal)",
+            "t-fb-email": "Email Address (Opsiyonal - para sa kopya)",
             "t-fb-office": `Opisina nga Gibisita <span class="text-red-500">*</span>`,
             "t-sel-office": "Pagpili og Opisina",
             "t-fb-service": `Serbisyo nga Nakuha <span class="text-red-500">*</span>`,
@@ -1297,7 +1603,23 @@ document.addEventListener('DOMContentLoaded', () => {
             "t-cc3-opt1": "Dako kaayog natabang",
             "t-cc3-opt2": "Medyo nakatabang",
             "t-cc3-opt3": "Wala nakatabang",
-            "t-cc3-opt4": "N/A"
+            "t-cc3-opt4": "N/A",
+            "t-thank-title": "Daghang salamat sa imong feedback!!",
+            "t-thank-desc": "Malamapuson nga narekord ug na-sumite ang imong feedback.",
+            "t-thank-sub": "Salamat sa imong panahon sa pagtabang kanamo nga mapalambo ang kalidad sa mga serbisyo sa Bohol Island State University.",
+            "t-thank-btn-done": "Nahuman Na",
+            "t-thank-btn-another": "Mopadala og Lain",
+            "t-fb-date": `Petsa <span class="text-red-500">*</span>`,
+            "t-fb-time": `Oras <span class="text-red-500">*</span>`,
+            "t-email-ask": "Gusto ba nimong i-email ang kopya sa imong tubag?",
+            "t-email-opt-yes": "Oo, i-email akong kopya",
+            "t-email-opt-no": "Dili na, salamat",
+            "t-email-placeholder": "Ibutang ang imong email address...",
+            "t-email-send-btn": "Ipadala ang Resibo sa Email",
+            "t-email-copy-btn": "Kopyaha ang Sumaryo",
+            "t-email-success-open": "Giablihan ang imong email app uban ang resibo sa feedback...",
+            "t-email-copied": "Nakopya ang sumaryo sa tubag sa clipboard!",
+            "t-email-invalid": "Palihug pagsulod og balido nga email address."
         }
     };
 
@@ -1345,7 +1667,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // === Dynamic Form Config ===
     const getDefaultFormConfig = () => ({
         offices: ["Registrar's Office", "Cashier", "Library", "Clinic", "Guidance Office"],
-        recipients: ["Campus Quality Assurance Service | qa@bisu.edu.ph"],
+        recipients: ["Campus Quality Assurance & Feedback Head | fredianmherl.masas@bisu.edu.ph"],
         dimensions: JSON.parse(JSON.stringify(defaultDimensions))
     });
 
@@ -1357,6 +1679,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!Array.isArray(normalized.recipients) || normalized.recipients.length === 0) {
             normalized.recipients = getDefaultFormConfig().recipients;
+        } else {
+            // Automatically upgrade legacy placeholder qa@bisu.edu.ph to user specified admin email
+            normalized.recipients = normalized.recipients.map(r => {
+                if (typeof r === 'string' && r.includes('qa@bisu.edu.ph')) {
+                    return r.replace('qa@bisu.edu.ph', 'fredianmherl.masas@bisu.edu.ph');
+                }
+                return r;
+            });
         }
 
         if (!normalized.dimensions || typeof normalized.dimensions !== 'object') {
@@ -1491,7 +1821,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (translations[currentLang] && translations[currentLang]["t-sel-service"]) {
             selectLabel = translations[currentLang]["t-sel-service"];
         }
-        let optionsHtml = `<option value="" disabled selected id="t-sel-service">${selectLabel}</option>`;
+        let optionsHtml = `<option value="" selected id="t-sel-service">${selectLabel}</option>`;
         services.forEach(srv => {
             optionsHtml += `<option value="${srv}">${srv}</option>`;
         });
@@ -1601,10 +1931,74 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateDateTime() {
         const now = new Date();
-        currentDatetimeEl.textContent = now.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+        if (currentDatetimeEl) {
+            currentDatetimeEl.textContent = now.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+        }
     }
     updateDateTime();
     setInterval(updateDateTime, 60000);
+
+    function initDateTimeInputs() {
+        const dateInput = document.getElementById('date-visited');
+        const timeInput = document.getElementById('time-visited');
+
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const currentTimeStr = `${hh}:${min}`;
+
+        if (dateInput) {
+            if (!dateInput.value) dateInput.value = todayStr;
+            dateInput.max = todayStr;
+        }
+        if (timeInput && !timeInput.value) {
+            timeInput.value = currentTimeStr;
+        }
+        updateDayOfWeekBadge();
+    }
+
+    function updateDayOfWeekBadge() {
+        const dateInput = document.getElementById('date-visited');
+        const dayBadge = document.getElementById('day-of-week-badge');
+        if (!dateInput || !dayBadge) return;
+
+        const val = dateInput.value;
+        if (!val) {
+            dayBadge.textContent = 'Select Day';
+            return;
+        }
+
+        const parts = val.split('-');
+        if (parts.length === 3) {
+            const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            if (!isNaN(d.getTime())) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const compareD = new Date(d);
+                compareD.setHours(0, 0, 0, 0);
+
+                const diffDays = Math.round((today.getTime() - compareD.getTime()) / (1000 * 60 * 60 * 24));
+                const dayName = d.toLocaleDateString(undefined, { weekday: 'long' });
+
+                if (diffDays === 0) {
+                    dayBadge.textContent = `Today (${dayName})`;
+                } else if (diffDays === 1) {
+                    dayBadge.textContent = `Yesterday (${dayName})`;
+                } else {
+                    dayBadge.textContent = `${dayName} (${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })})`;
+                }
+                return;
+            }
+        }
+        dayBadge.textContent = 'Selected Date';
+    }
+
+    initDateTimeInputs();
 
     let currentRatings = {};
 
@@ -1627,7 +2021,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ratingValues.forEach(e => {
                 buttonsHtml += `
                     <button type="button"
-                        class="likert-btn relative flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 font-bold shadow-xs focus:outline-none w-[40px] h-[40px] sm:w-[46px] sm:h-[46px] lg:w-[38px] lg:h-[38px] xl:w-[44px] xl:h-[44px] text-sm sm:text-base lg:text-sm xl:text-base ${e.colorClass} transition-all duration-200 transform cursor-pointer"
+                        class="likert-btn relative flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 font-bold shadow-xs focus:outline-none w-[42px] h-[42px] sm:w-[44px] sm:h-[44px] lg:w-[42px] lg:h-[42px] xl:w-[46px] xl:h-[46px] text-sm sm:text-base lg:text-sm xl:text-base ${e.colorClass} transition-all duration-200 transform cursor-pointer"
                         data-dimension="${dim.id}" data-value="${e.value}" title="${e.label}">
                         ${e.value}
                     </button>
@@ -1638,13 +2032,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                     <div class="flex items-start flex-1">
                         <div class="flex-1 min-w-0">
-                            <h4 class="font-bold text-slate-800 text-[13px] lg:text-[12px] xl:text-[13.5px] flex items-center leading-tight">
+                            <h4 class="font-bold text-slate-800 text-[13.5px] sm:text-[14.5px] lg:text-[14px] xl:text-[14.5px] flex items-center leading-tight">
                                 ${dim.label} <span class="text-red-500 ml-1">*</span>
                             </h4>
-                            <p class="text-[11px] lg:text-[10px] xl:text-[11px] text-slate-500 font-medium leading-normal mt-0.5">${dim.desc}</p>
+                            <p class="text-[11.5px] sm:text-[12.5px] lg:text-[12px] xl:text-[12.5px] text-slate-500 font-medium leading-normal mt-0.5">${dim.desc}</p>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between w-full sm:w-auto gap-1 sm:gap-1.5 shrink-0 sm:self-center mt-1.5 sm:mt-0">
+                    <div class="flex items-center justify-between w-full sm:w-auto gap-2 sm:gap-2 shrink-0 sm:self-center mt-2 sm:mt-0 pt-2 sm:pt-0 border-t border-slate-100/80 sm:border-0">
                         ${buttonsHtml}
                     </div>
                 </div>
@@ -1661,10 +2055,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update State
                 currentRatings[dim] = val;
 
-                // Update UI visually
+                // Update UI visually with soft animation
                 const parent = this.parentElement;
-                parent.querySelectorAll('.likert-btn').forEach(b => b.classList.remove('selected'));
-                this.classList.add('selected');
+                parent.querySelectorAll('.likert-btn').forEach(b => {
+                    b.classList.remove('selected', 'animate-select-pop');
+                });
+                this.classList.add('selected', 'animate-select-pop');
+
+                // Soft highlight on card
+                const card = document.getElementById(`card-${dim}`);
+                if (card) card.classList.add('is-rated');
 
                 checkFormCompletion();
             });
@@ -1675,6 +2075,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if(currentRatings[dim] !== null){
                 const btn = document.querySelector(`.likert-btn[data-dimension="${dim}"][data-value="${currentRatings[dim]}"]`);
                 if(btn) btn.classList.add('selected');
+                const card = document.getElementById(`card-${dim}`);
+                if (card) card.classList.add('is-rated');
             }
         }
     }
@@ -1701,14 +2103,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. Required CC radio groups (cc1, cc2, cc3)
         const cc1 = document.querySelector('input[name="cc1"]:checked');
-        const cc2 = document.querySelector('input[name="cc2"]:checked');
-        const cc3 = document.querySelector('input[name="cc3"]:checked');
+        let ccOk = false;
+        if (cc1 && cc1.value === '4') {
+            ccOk = true;
+        } else if (cc1) {
+            const cc2 = document.querySelector('input[name="cc2"]:checked');
+            const cc3 = document.querySelector('input[name="cc3"]:checked');
+            ccOk = !!(cc2 && cc3);
+        }
 
         // 3. All Likert ratings filled
         const activeDims = formConfig.dimensions[currentLang] || formConfig.dimensions['en'];
         const ratingsOk = activeDims.every(d => currentRatings[d.id] !== null && currentRatings[d.id] !== undefined);
 
-        const complete = office && clientType && serviceOk && cc1 && cc2 && cc3 && ratingsOk;
+        const complete = office && clientType && serviceOk && ccOk && ratingsOk;
 
         if (complete) {
             // Filled - solid blue
@@ -1719,6 +2127,59 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.classList.remove('bg-bisu-blue', 'hover:bg-bisu-blue-dark', 'text-white');
             submitBtn.classList.add('bg-white', 'hover:bg-slate-50', 'text-bisu-blue', 'border-2', 'border-bisu-blue');
         }
+    }
+
+    function updateCitizenCharterState() {
+        const cc1Checked = document.querySelector('input[name="cc1"]:checked');
+        const cc2Container = document.getElementById('cc2-container');
+        const cc3Container = document.getElementById('cc3-container');
+        const cc2Radios = document.querySelectorAll('input[name="cc2"]');
+        const cc3Radios = document.querySelectorAll('input[name="cc3"]');
+
+        if (cc1Checked && cc1Checked.value === '4') {
+            // Option 4: "I do not know what a CC is and I did not see one in this office."
+            // Grey out CC2 & CC3 and make them not clickable
+            if (cc2Container) {
+                cc2Container.classList.add('opacity-35', 'pointer-events-none', 'select-none', 'filter', 'grayscale-[60%]', 'cursor-not-allowed');
+                cc2Container.setAttribute('aria-disabled', 'true');
+            }
+            if (cc3Container) {
+                cc3Container.classList.add('opacity-35', 'pointer-events-none', 'select-none', 'filter', 'grayscale-[60%]', 'cursor-not-allowed');
+                cc3Container.setAttribute('aria-disabled', 'true');
+            }
+
+            // Auto-check N/A for CC2 (value 5) and CC3 (value 4)
+            const cc2NA = document.querySelector('input[name="cc2"][value="5"]');
+            const cc3NA = document.querySelector('input[name="cc3"][value="4"]');
+            if (cc2NA) cc2NA.checked = true;
+            if (cc3NA) cc3NA.checked = true;
+
+            // Disable radio inputs
+            cc2Radios.forEach(r => r.disabled = true);
+            cc3Radios.forEach(r => r.disabled = true);
+        } else {
+            // Option 1, 2, 3 or none: restore normal interactive state
+            if (cc2Container) {
+                cc2Container.classList.remove('opacity-35', 'pointer-events-none', 'select-none', 'filter', 'grayscale-[60%]', 'cursor-not-allowed');
+                cc2Container.removeAttribute('aria-disabled');
+            }
+            if (cc3Container) {
+                cc3Container.classList.remove('opacity-35', 'pointer-events-none', 'select-none', 'filter', 'grayscale-[60%]', 'cursor-not-allowed');
+                cc3Container.removeAttribute('aria-disabled');
+            }
+
+            cc2Radios.forEach(r => r.disabled = false);
+            cc3Radios.forEach(r => r.disabled = false);
+
+            if (cc1Checked && (cc1Checked.value === '1' || cc1Checked.value === '2' || cc1Checked.value === '3')) {
+                // If N/A was previously auto-selected when 4 was picked, uncheck it so user can choose actively
+                const cc2NA = document.querySelector('input[name="cc2"][value="5"]');
+                const cc3NA = document.querySelector('input[name="cc3"][value="4"]');
+                if (cc2NA && cc2NA.checked) cc2NA.checked = false;
+                if (cc3NA && cc3NA.checked) cc3NA.checked = false;
+            }
+        }
+        checkFormCompletion();
     }
 
     async function initializeFormConfig() {
@@ -1791,6 +2252,47 @@ document.addEventListener('DOMContentLoaded', () => {
     consentCheckbox.addEventListener('change', (e) => {
         acceptConsentBtn.disabled = !e.target.checked;
     });
+
+    // Date and Time picker interactions for feedback form
+    const dateVisitedEl = document.getElementById('date-visited');
+    const timeVisitedEl = document.getElementById('time-visited');
+    const btnSetNow = document.getElementById('btn-set-now');
+    const btnPresetAm = document.getElementById('btn-preset-am');
+    const btnPresetPm = document.getElementById('btn-preset-pm');
+
+    if (dateVisitedEl) {
+        dateVisitedEl.addEventListener('change', updateDayOfWeekBadge);
+        dateVisitedEl.addEventListener('input', updateDayOfWeekBadge);
+    }
+
+    if (btnSetNow) {
+        btnSetNow.addEventListener('click', () => {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            if (dateVisitedEl) dateVisitedEl.value = `${yyyy}-${mm}-${dd}`;
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            if (timeVisitedEl) timeVisitedEl.value = `${hh}:${min}`;
+            updateDayOfWeekBadge();
+            showToast('Date & time set to current time.', 'info');
+        });
+    }
+
+    if (btnPresetAm) {
+        btnPresetAm.addEventListener('click', () => {
+            if (timeVisitedEl) timeVisitedEl.value = '09:00';
+            showToast('Time set to 9:00 AM', 'info');
+        });
+    }
+
+    if (btnPresetPm) {
+        btnPresetPm.addEventListener('click', () => {
+            if (timeVisitedEl) timeVisitedEl.value = '14:00';
+            showToast('Time set to 2:00 PM', 'info');
+        });
+    }
 
     acceptConsentBtn.addEventListener('click', () => {
         privacyModal.classList.add('opacity-0');
@@ -1909,6 +2411,92 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function updateDashboardRoleUI() {
+        const isOffice = currentUserRole === 'office' && !!currentOfficeScope;
+        
+        // Sidebar elements
+        const sidebarTitle = document.getElementById('admin-sidebar-title');
+        const sidebarOfficeBadge = document.getElementById('sidebar-office-badge');
+        const sidebarOfficeName = document.getElementById('sidebar-office-name');
+        const sidebarQrLabel = document.getElementById('sidebar-qr-label');
+        const sidebarPrintLabel = document.getElementById('sidebar-print-label');
+        const sidebarLogoutLabel = document.getElementById('sidebar-logout-label');
+        const adminOnlyFeatures = document.querySelectorAll('.admin-only-feature');
+        
+        // Main Dashboard header elements
+        const mainTitle = document.getElementById('admin-main-title');
+        const mainSubtitle = document.getElementById('admin-main-subtitle');
+        const officeScopeBadge = document.getElementById('admin-office-scope-badge');
+        const officeScopeText = document.getElementById('admin-office-scope-text');
+        
+        // Print header element
+        const printOfficeConcerned = document.getElementById('print-office-concerned');
+        
+        // MRC Select
+        const reportCardSelect = document.getElementById('office-report-card-select');
+
+        if (isOffice) {
+            if (sidebarTitle) sidebarTitle.textContent = 'Office Portal';
+            if (sidebarOfficeBadge) {
+                sidebarOfficeBadge.classList.remove('hidden');
+                sidebarOfficeBadge.classList.add('flex');
+            }
+            if (sidebarOfficeName) sidebarOfficeName.textContent = currentOfficeScope;
+            if (sidebarQrLabel) sidebarQrLabel.textContent = 'Office QR Code';
+            if (sidebarPrintLabel) sidebarPrintLabel.textContent = 'Print Office Dashboard';
+            if (sidebarLogoutLabel) sidebarLogoutLabel.textContent = 'Exit Office Portal';
+            
+            // Hide admin only management and maintenance features
+            adminOnlyFeatures.forEach(el => el.classList.add('hidden'));
+            
+            // Main Header
+            if (mainTitle) mainTitle.textContent = `${currentOfficeScope} Analytics`;
+            if (officeScopeBadge) {
+                officeScopeBadge.classList.remove('hidden');
+                officeScopeBadge.classList.add('inline-flex');
+            }
+            if (officeScopeText) officeScopeText.textContent = currentOfficeScope;
+            if (mainSubtitle) {
+                mainSubtitle.innerHTML = `Real-time customer satisfaction metrics and performance logs for <strong>${escapeHtml(currentOfficeScope)}</strong>.`;
+            }
+            
+            if (printOfficeConcerned) {
+                printOfficeConcerned.textContent = currentOfficeScope;
+            }
+
+            // Set and lock the MRC select
+            if (reportCardSelect) {
+                reportCardSelect.value = currentOfficeScope;
+            }
+        } else {
+            if (sidebarTitle) sidebarTitle.textContent = 'Admin Console';
+            if (sidebarOfficeBadge) {
+                sidebarOfficeBadge.classList.add('hidden');
+                sidebarOfficeBadge.classList.remove('flex');
+            }
+            if (sidebarQrLabel) sidebarQrLabel.textContent = 'QR Code Generator';
+            if (sidebarPrintLabel) sidebarPrintLabel.textContent = 'Print Full Dashboard';
+            if (sidebarLogoutLabel) sidebarLogoutLabel.textContent = 'Close Admin Session';
+            
+            // Show admin features
+            adminOnlyFeatures.forEach(el => el.classList.remove('hidden'));
+            
+            // Main Header
+            if (mainTitle) mainTitle.textContent = 'Customer Satisfaction Analytics';
+            if (officeScopeBadge) {
+                officeScopeBadge.classList.add('hidden');
+                officeScopeBadge.classList.remove('inline-flex');
+            }
+            if (mainSubtitle) {
+                mainSubtitle.innerHTML = 'Real-time customer satisfaction metrics and service performance logs. <span id="db-connection-detail" class="text-slate-400"></span>';
+            }
+            
+            if (printOfficeConcerned) {
+                printOfficeConcerned.textContent = 'All Campus Offices';
+            }
+        }
+    }
+
     function openAdminView() {
         viewFeedback.classList.add('section-hidden');
         viewComplaint.classList.add('section-hidden');
@@ -1934,6 +2522,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        updateDashboardRoleUI();
+
         const dashScroll = document.getElementById('admin-dashboard-scroll');
         if (dashScroll) dashScroll.scrollTop = 0;
     }
@@ -1945,28 +2535,82 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show admin login/lock buttons
         if (adminLoginBtn) adminLoginBtn.classList.remove('hidden');
         if (adminLoginBtnMobile) adminLoginBtnMobile.classList.remove('hidden');
+
+        currentUserRole = 'super_admin';
+        currentOfficeScope = null;
+        updateDashboardRoleUI();
     }
 
     async function isCurrentUserAdmin(client) {
         if (localStorage.getItem('isLocalAdmin') === 'true') {
+            currentUserRole = 'super_admin';
+            currentOfficeScope = null;
+            sessionStorage.setItem('currentUserRole', 'super_admin');
+            sessionStorage.removeItem('currentOfficeAccount');
+            return true;
+        }
+        if (localStorage.getItem('isLocalOfficeUser') === 'true') {
+            currentUserRole = 'office';
+            currentOfficeScope = localStorage.getItem('localOfficeName') || sessionStorage.getItem('currentOfficeAccount');
+            sessionStorage.setItem('currentUserRole', 'office');
+            if (currentOfficeScope) {
+                sessionStorage.setItem('currentOfficeAccount', currentOfficeScope);
+            }
             return true;
         }
         try {
             const { data: authData, error: authError } = await client.auth.getUser();
             if (authError || !authData?.user) return false;
 
+            // 1. Check admin_users table
             const { data: adminData, error: adminError } = await client
                 .from('admin_users')
                 .select('user_id')
                 .eq('user_id', authData.user.id)
                 .maybeSingle();
 
-            if (adminError) {
-                console.error('Admin verification failed:', adminError);
-                return false;
+            if (adminData) {
+                currentUserRole = 'super_admin';
+                currentOfficeScope = null;
+                sessionStorage.setItem('currentUserRole', 'super_admin');
+                sessionStorage.removeItem('currentOfficeAccount');
+                return true;
             }
 
-            return !!adminData;
+            // 2. Check office_accounts table
+            if (authData.user.email) {
+                const { data: officeData } = await client
+                    .from('office_accounts')
+                    .select('id, office_name, email')
+                    .eq('email', authData.user.email)
+                    .maybeSingle();
+                if (officeData) {
+                    currentUserRole = 'office';
+                    currentOfficeScope = officeData.office_name;
+                    sessionStorage.setItem('currentUserRole', 'office');
+                    sessionStorage.setItem('currentOfficeAccount', officeData.office_name);
+                    return true;
+                }
+            }
+
+            // 3. Check local office accounts if any
+            if (typeof getLocalOfficeAccounts === 'function' && authData.user.email) {
+                const localAccounts = getLocalOfficeAccounts();
+                const matched = localAccounts.find(acc => acc.email && acc.email.toLowerCase() === authData.user.email.toLowerCase());
+                if (matched) {
+                    currentUserRole = 'office';
+                    currentOfficeScope = matched.office_name;
+                    sessionStorage.setItem('currentUserRole', 'office');
+                    sessionStorage.setItem('currentOfficeAccount', matched.office_name);
+                    return true;
+                }
+            }
+
+            if (adminError) {
+                console.warn('Admin verification notice:', adminError.message);
+            }
+
+            return false;
         } catch (err) {
             console.warn('Network or session error during admin check:', err);
             return false;
@@ -2003,9 +2647,16 @@ document.addEventListener('DOMContentLoaded', () => {
         submitLoginBtn.disabled = true;
         submitLoginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Logging in...';
 
-        // Local Fallback Admin Check (offline UI only — cannot read cloud rows without Auth)
+        // 1. Super Admin Local Fallback
         if (email === 'admin@bisu.edu.ph' && password === 'bisuadmin') {
             localStorage.setItem('isLocalAdmin', 'true');
+            localStorage.removeItem('isLocalOfficeUser');
+            localStorage.removeItem('localOfficeName');
+            currentUserRole = 'super_admin';
+            currentOfficeScope = null;
+            sessionStorage.setItem('currentUserRole', 'super_admin');
+            sessionStorage.removeItem('currentOfficeAccount');
+
             showToast('Local admin mode. For live database data, sign in with a Supabase Auth admin account.', 'warning');
             adminLoginModal.classList.add('hidden');
             adminLoginModal.classList.remove('flex');
@@ -2018,51 +2669,103 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // 2. Check if this email matches any known office account (either local or database)
+        let localAccounts = [];
+        if (typeof getLocalOfficeAccounts === 'function') {
+            localAccounts = getLocalOfficeAccounts();
+        }
+        const matchedLocalOffice = localAccounts.find(acc => acc.email && acc.email.toLowerCase() === email.toLowerCase());
+
         const client = await getSupabaseClient();
-        if (!client) {
-            showToast('Supabase is not connected. Check supabaseClient.js keys, or use local fallback admin@bisu.edu.ph / bisuadmin', 'error');
-            submitLoginBtn.disabled = false;
-            submitLoginBtn.innerHTML = 'Login to Dashboard';
-            return;
+
+        // If Supabase client is available, try signing in with Supabase Auth
+        if (client) {
+            try {
+                localStorage.removeItem('isLocalAdmin');
+                localStorage.removeItem('isLocalOfficeUser');
+                localStorage.removeItem('localOfficeName');
+
+                const { data: authResult, error: signInError } = await client.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (!signInError && authResult?.user) {
+                    const adminAllowed = await isCurrentUserAdmin(client);
+                    if (adminAllowed) {
+                        adminLoginModal.classList.add('hidden');
+                        adminLoginModal.classList.remove('flex');
+                        document.body.style.overflow = '';
+                        adminLoginForm.reset();
+                        
+                        if (currentUserRole === 'office' && currentOfficeScope) {
+                            showToast(`Connected to ${currentOfficeScope} Office Portal.`, 'success');
+                        } else {
+                            showToast('Connected to database as Administrator.', 'success');
+                        }
+                        openAdminView();
+                        fetchAdminData();
+                        submitLoginBtn.disabled = false;
+                        submitLoginBtn.innerHTML = 'Login to Dashboard';
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('Supabase Auth attempt notice:', err);
+            }
         }
 
-        try {
+        // 3. Check direct office_accounts query or local storage accounts
+        let matchedOffice = matchedLocalOffice;
+        if (!matchedOffice && client) {
+            try {
+                const { data: officeRows } = await client.from('office_accounts')
+                    .select('office_name, email')
+                    .eq('email', email)
+                    .maybeSingle();
+                if (officeRows) {
+                    matchedOffice = officeRows;
+                }
+            } catch (e) {
+                console.warn('Direct office_accounts check:', e);
+            }
+        }
+
+        if (matchedOffice) {
             localStorage.removeItem('isLocalAdmin');
-            const { error: signInError } = await client.auth.signInWithPassword({
-                email,
-                password
-            });
-
-            if (signInError) {
-                showToast(`Login failed: ${signInError.message}`, 'error');
-                return;
-            }
-
-            const adminAllowed = await isCurrentUserAdmin(client);
-            if (!adminAllowed) {
-                await client.auth.signOut();
-                showToast('Account is not registered in admin_users. Mark the Auth user as admin in Supabase.', 'error');
-                return;
-            }
+            localStorage.setItem('isLocalOfficeUser', 'true');
+            localStorage.setItem('localOfficeName', matchedOffice.office_name);
+            currentUserRole = 'office';
+            currentOfficeScope = matchedOffice.office_name;
+            sessionStorage.setItem('currentUserRole', 'office');
+            sessionStorage.setItem('currentOfficeAccount', matchedOffice.office_name);
 
             adminLoginModal.classList.add('hidden');
             adminLoginModal.classList.remove('flex');
             document.body.style.overflow = '';
             adminLoginForm.reset();
-            showToast('Connected to database as admin.', 'success');
+            showToast(`Welcome to ${matchedOffice.office_name} Office Portal!`, 'success');
             openAdminView();
             fetchAdminData();
-        } catch (err) {
-            showToast(`Login Error: ${err.message}`, 'warning');
-        } finally {
             submitLoginBtn.disabled = false;
             submitLoginBtn.innerHTML = 'Login to Dashboard';
+            return;
         }
+
+        showToast('Login failed: Invalid credentials or account is not registered as an administrator or office account.', 'error');
+        submitLoginBtn.disabled = false;
+        submitLoginBtn.innerHTML = 'Login to Dashboard';
     });
 
     if (logoutAdminBtn) {
         logoutAdminBtn.addEventListener('click', async () => {
             localStorage.removeItem('isLocalAdmin');
+            localStorage.removeItem('isLocalOfficeUser');
+            localStorage.removeItem('localOfficeName');
+            sessionStorage.removeItem('currentOfficeAccount');
+            sessionStorage.removeItem('currentUserRole');
+            currentUserRole = 'super_admin';
+            currentOfficeScope = null;
             const client = await getSupabaseClient();
             if (client) {
                 try {
@@ -2165,27 +2868,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Accounts Management Logic ---
 
+    function getLocalOfficeAccounts() {
+        try {
+            const raw = localStorage.getItem('bisu_office_accounts');
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveLocalOfficeAccounts(list) {
+        try {
+            localStorage.setItem('bisu_office_accounts', JSON.stringify(list));
+        } catch (e) {
+            console.warn('Failed to cache office accounts:', e);
+        }
+    }
+
     async function fetchOfficeAccounts() {
         if (!accountsTableBody) return;
-        const client = await getSupabaseClient();
-        if (!client) return;
+        let accounts = [];
 
-        const { data, error } = await client.from('office_accounts').select('*').order('office_name', { ascending: true });
-        
+        try {
+            const client = await getSupabaseClient();
+            if (client) {
+                const { data, error } = await client.from('office_accounts').select('*').order('office_name', { ascending: true });
+                if (!error && data && data.length > 0) {
+                    accounts = data;
+                    saveLocalOfficeAccounts(data);
+                } else if (error) {
+                    console.warn('Supabase office_accounts fetch warning:', error.message);
+                }
+            }
+        } catch (e) {
+            console.warn('fetchOfficeAccounts database query error:', e);
+        }
+
+        if (accounts.length === 0) {
+            accounts = getLocalOfficeAccounts();
+        }
+
         accountsTableBody.innerHTML = '';
-        if (error || !data || data.length === 0) {
+        if (!accounts || accounts.length === 0) {
             accountsTableBody.innerHTML = `<tr><td colspan="3" class="px-4 py-8 text-center text-slate-400 italic">No office accounts registered.</td></tr>`;
             return;
         }
 
-        data.forEach(acc => {
+        accounts.forEach((acc, idx) => {
             const tr = document.createElement('tr');
             tr.className = 'border-b border-slate-100 last:border-0 hover:bg-slate-50 transition';
+            const accId = acc.id || `local_${idx}`;
             tr.innerHTML = `
-                <td class="px-4 py-3 font-semibold text-bisu-blue">${acc.office_name}</td>
-                <td class="px-4 py-3">${acc.email}</td>
+                <td class="px-4 py-3 font-semibold text-bisu-blue">${escapeHtml(acc.office_name)}</td>
+                <td class="px-4 py-3 text-slate-700">${escapeHtml(acc.email)}</td>
                 <td class="px-4 py-3 text-right">
-                    <button onclick="deleteOfficeAccount(${acc.id})" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">Delete</button>
+                    <button onclick="deleteOfficeAccount('${accId}', '${escapeHtml(acc.email)}')" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">Delete</button>
                 </td>
             `;
             accountsTableBody.appendChild(tr);
@@ -2221,58 +2958,73 @@ document.addEventListener('DOMContentLoaded', () => {
     if(officeAccountForm) {
         officeAccountForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const client = await getSupabaseClient();
-            if(!client) return;
-
             const office = accOfficeSelect.value;
             const email = accEmailInput.value.trim();
             const password = accPasswordInput.value;
 
+            if (!email || !office) {
+                showToast('Please specify an office and email address.', 'warning');
+                return;
+            }
+
             submitAccBtn.disabled = true;
             submitAccBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
 
+            let authNote = '';
+            let client = null;
             try {
-                // Try registering the user in Auth
-                const { error: signUpError } = await client.auth.signUp({ email, password });
-                
-                if (signUpError && signUpError.message.toLowerCase().includes("already registered")) {
-                    // Try to use a custom RPC to update passwords (since frontend client cannot change other user passwords)
-                    const { error: rpcError } = await client.rpc('admin_change_user_password', { target_email: email, new_password: password });
-                    if (rpcError) {
-                        console.warn('RPC missing or failed:', rpcError);
-                        showToast('Notice: Email exists. Could not change password automatically without Supabase backend permissions.', 'warning');
-                    } else {
-                        showToast('Password updated successfully via RPC.', 'success');
-                    }
-                } else if (signUpError) {
-                    console.warn("Auth SignUp Issue: ", signUpError);
-                }
-
-                // Check if mapping exists
-                const { data: existing } = await client.from('office_accounts').select('id').eq('email', email).maybeSingle();
-
-                if (existing) {
-                    const { error } = await client.from('office_accounts').update({ office_name: office }).eq('id', existing.id);
-                    if (error) throw error;
-                    showToast('Account privileges updated.', 'success');
-                } else {
-                    const { error } = await client.from('office_accounts').insert([{ email, office_name: office }]);
-                    if (error) throw error;
-                    showToast('New office account authorized.', 'success');
-                }
-
-                officeAccountForm.reset();
-                fetchOfficeAccounts();
-            } catch (err) {
-                showToast(`Failed to save: ${err.message}`, 'error');
-            } finally {
-                submitAccBtn.disabled = false;
-                submitAccBtn.innerHTML = 'Save Credentials';
+                client = await getSupabaseClient();
+            } catch (ce) {
+                console.warn('Supabase client error:', ce);
             }
+
+            if (client) {
+                try {
+                    // Try registering user in Supabase Auth
+                    const { error: signUpError } = await client.auth.signUp({ email, password });
+                    if (signUpError) {
+                        if (signUpError.message.toLowerCase().includes("already registered")) {
+                            const { error: rpcError } = await client.rpc('admin_change_user_password', { target_email: email, new_password: password });
+                            if (rpcError) {
+                                console.warn('RPC password update issue:', rpcError.message);
+                            }
+                        } else {
+                            console.warn("Auth SignUp Note:", signUpError.message);
+                            authNote = ` (${signUpError.message})`;
+                        }
+                    }
+                } catch (ae) {
+                    console.warn('Auth attempt error:', ae);
+                }
+
+                try {
+                    // Check if mapping exists in Supabase table
+                    const { data: existing } = await client.from('office_accounts').select('id').eq('email', email).maybeSingle();
+                    if (existing) {
+                        await client.from('office_accounts').update({ office_name: office }).eq('id', existing.id);
+                    } else {
+                        await client.from('office_accounts').insert([{ email, office_name: office }]);
+                    }
+                } catch (dbErr) {
+                    console.warn('Database write to office_accounts table issue:', dbErr);
+                }
+            }
+
+            // Always update local storage cache for immediate reactivity and offline support
+            const currentList = getLocalOfficeAccounts().filter(a => a.email.toLowerCase() !== email.toLowerCase());
+            currentList.push({ id: 'local_' + Date.now(), email, office_name: office });
+            saveLocalOfficeAccounts(currentList);
+
+            showToast(`Office account authorized for ${office}.${authNote ? ' ' + authNote : ''}`, 'success');
+            officeAccountForm.reset();
+            fetchOfficeAccounts();
+
+            submitAccBtn.disabled = false;
+            submitAccBtn.innerHTML = 'Save Credentials';
         });
     }
 
-    window.deleteOfficeAccount = async function(id) {
+    window.deleteOfficeAccount = async function(id, email) {
         const result = await Swal.fire({
             title: 'Delete Account?',
             html: 'They will lose access to the dashboard immediately.<br><b>This action cannot be undone.</b>',
@@ -2283,8 +3035,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: 'text-2xl font-black text-slate-800 tracking-tight mt-2',
                 htmlContainer: 'text-slate-500 font-medium mt-2 mb-6 text-sm',
                 actions: 'w-full flex justify-center gap-3 mt-6',
-                confirmButton: 'bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl px-8 py-3.5 shadow-md transition-all w-full max-w-[160px] flex items-center justify-center gap-2',
-                cancelButton: 'bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-xl px-8 py-3.5 transition-all border border-slate-200 w-full max-w-[150px] shadow-sm',
+                confirmButton: 'bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl px-8 py-3.5 shadow-md transition-all w-full max-w-[160px] flex items-center justify-center gap-2 cursor-pointer',
+                cancelButton: 'bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-xl px-8 py-3.5 transition-all border border-slate-200 w-full max-w-[150px] shadow-sm cursor-pointer',
             },
             buttonsStyling: false,
             showCancelButton: true,
@@ -2294,16 +3046,25 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if(!result.isConfirmed) return;
         
-        const client = await getSupabaseClient();
-        if(!client) return;
-        
-        const { error } = await client.from('office_accounts').delete().eq('id', id);
-        if(error) {
-            showToast('Failed to delete account.', 'error');
-        } else {
-            showToast('Account deleted.', 'success');
-            fetchOfficeAccounts();
+        try {
+            const client = await getSupabaseClient();
+            if (client && id && !String(id).startsWith('local_')) {
+                await client.from('office_accounts').delete().eq('id', id);
+            }
+        } catch (e) {
+            console.warn('Error deleting from Supabase:', e);
         }
+
+        // Clean local storage cache
+        const updated = getLocalOfficeAccounts().filter(a => {
+            if (id && String(a.id) === String(id)) return false;
+            if (email && a.email.toLowerCase() === email.toLowerCase()) return false;
+            return true;
+        });
+        saveLocalOfficeAccounts(updated);
+
+        showToast('Account deleted.', 'success');
+        fetchOfficeAccounts();
     };
 
 
@@ -2312,6 +3073,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     (async () => {
         if (localStorage.getItem('isLocalAdmin') === 'true') {
+            currentUserRole = 'super_admin';
+            currentOfficeScope = null;
+            openAdminView();
+            fetchAdminData();
+            return;
+        }
+
+        if (localStorage.getItem('isLocalOfficeUser') === 'true') {
+            currentUserRole = 'office';
+            currentOfficeScope = localStorage.getItem('localOfficeName') || sessionStorage.getItem('currentOfficeAccount');
             openAdminView();
             fetchAdminData();
             return;
@@ -2329,6 +3100,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             client.auth.onAuthStateChange(async (_event, session) => {
                 if (localStorage.getItem('isLocalAdmin') === 'true') {
+                    currentUserRole = 'super_admin';
+                    currentOfficeScope = null;
+                    openAdminView();
+                    fetchAdminData();
+                    return;
+                }
+
+                if (localStorage.getItem('isLocalOfficeUser') === 'true') {
+                    currentUserRole = 'office';
+                    currentOfficeScope = localStorage.getItem('localOfficeName') || sessionStorage.getItem('currentOfficeAccount');
                     openAdminView();
                     fetchAdminData();
                     return;
@@ -2358,6 +3139,401 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
 
     // === Form Submissions & Supabase ===
+
+    function generateFeedbackReceiptText(payload = {}, lang = 'en', targetEmail = '') {
+        const OFFICIAL_FEEDBACK_EMAIL = 'fredianmherl.masas@bisu.edu.ph';
+        const t = (typeof currentLang !== 'undefined' && translations[currentLang]) ? translations[currentLang] : (translations[lang] || translations.en);
+        const refCode = 'BISU-CSF-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+        const dateStr = payload.created_at 
+            ? new Date(payload.created_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : new Date().toLocaleString();
+
+        const officeName = payload.office_visited || document.getElementById('office-visited')?.value || 'General Office';
+        const serviceAvailed = payload.service_availed || 'Unspecified';
+        const clientType = payload.client_type || 'Client';
+        const clientName = payload.client_name && payload.client_name !== 'Anonymous' ? payload.client_name : 'Anonymous';
+        const recipientDisplay = (targetEmail || payload.client_email || '').trim() || 'Client Copy';
+        const servedBy = payload.served_by || 'N/A';
+        const region = payload.region_of_residence || 'N/A';
+
+        // CC mapping
+        const cc1Map = {
+            1: "1. I know what a CC is and I saw this office's CC.",
+            2: "2. I know what a CC is but I did not see this office's CC.",
+            3: "3. I learned of the CC only when I saw this office's CC.",
+            4: "4. I do not know what a CC is and I did not see one in this office."
+        };
+        const cc2Map = {
+            1: "1. Easy to see",
+            2: "2. Somewhat easy to see",
+            3: "3. Difficult to see",
+            4: "4. Not visible at all",
+            5: "5. N/A"
+        };
+        const cc3Map = {
+            1: "Helped very much",
+            2: "Somewhat helped",
+            3: "Did not help",
+            4: "N/A"
+        };
+
+        const cc1Text = cc1Map[payload.cc1] || (payload.cc1 ? `Option ${payload.cc1}` : 'N/A');
+        const cc2Text = cc2Map[payload.cc2] || (payload.cc2 ? `Option ${payload.cc2}` : 'N/A');
+        const cc3Text = cc3Map[payload.cc3] || (payload.cc3 ? `Option ${payload.cc3}` : 'N/A');
+
+        // Dimension breakdown
+        const activeDims = (typeof formConfig !== 'undefined' && formConfig && formConfig.dimensions && formConfig.dimensions[lang]) 
+            ? formConfig.dimensions[lang] 
+            : (defaultDimensions[lang] || defaultDimensions.en);
+
+        const ratingsMap = payload.ratings || {};
+        let dimsText = '';
+        if (Array.isArray(activeDims)) {
+            activeDims.forEach(d => {
+                const val = ratingsMap[d.id];
+                dimsText += `  * ${d.label}: ${val !== undefined && val !== null ? val + '/5' : 'N/A'}\n`;
+            });
+        }
+
+        const meanScoreStr = (payload.mean_score !== undefined && payload.mean_score !== null) 
+            ? `${payload.mean_score} / 5.00` 
+            : 'N/A';
+
+        return `=====================================================
+BOHOL ISLAND STATE UNIVERSITY - CALAPE CAMPUS
+CUSTOMER SATISFACTION FEEDBACK SUBMISSION RECEIPT
+=====================================================
+Reference Code    : ${refCode}
+Date & Time       : ${dateStr}
+Official Sender   : ${OFFICIAL_FEEDBACK_EMAIL} (BISU Feedback System)
+Recipient / To    : ${recipientDisplay}
+Official Copy CC  : ${OFFICIAL_FEEDBACK_EMAIL}
+
+TRANSACTION DETAILS:
+-----------------------------------------------------
+Client Name       : ${clientName}
+Client Type       : ${clientType}
+Office Visited    : ${officeName}
+Service Availed   : ${serviceAvailed}
+Served By         : ${servedBy}
+Region            : ${region}
+
+CITIZEN'S CHARTER (CC) ASSESSMENT:
+-----------------------------------------------------
+CC1 (Awareness)   : ${cc1Text}
+CC2 (Visibility)  : ${cc2Text}
+CC3 (Helpfulness) : ${cc3Text}
+
+SERVICE QUALITY EVALUATION RATINGS:
+-----------------------------------------------------
+${dimsText}Overall Average Score: ${meanScoreStr}
+
+COMMENTS & FEEDBACK:
+-----------------------------------------------------
+Commendations     : ${payload.commendations || 'None'}
+Suggestions       : ${payload.suggestions || 'None'}
+
+=====================================================
+Official System Email: ${OFFICIAL_FEEDBACK_EMAIL}
+This is an official feedback submission confirmation receipt.
+Thank you for helping Bohol Island State University continuously enhance public service delivery.
+BISU Calape Campus Portal: https://bisu.edu.ph
+=====================================================`;
+    }
+
+    function openFeedbackEmailReceipt(payload, recipientEmail, lang = 'en', mode = 'auto') {
+        const OFFICIAL_FEEDBACK_EMAIL = 'fredianmherl.masas@bisu.edu.ph';
+        const trimmedEmail = (recipientEmail || payload.client_email || '').trim();
+        const receiptBody = generateFeedbackReceiptText(payload, lang, trimmedEmail);
+        const officeName = payload.office_visited || 'BISU Calape';
+        const subject = `[BISU Calape CSFS] Feedback Receipt - ${officeName}`;
+        
+        if (trimmedEmail) {
+            try {
+                localStorage.setItem('bisu_client_email', trimmedEmail);
+            } catch(e) {}
+        }
+
+        const isGmail = mode === 'gmail' || (mode === 'auto' && (trimmedEmail.toLowerCase().endsWith('@gmail.com') || trimmedEmail.toLowerCase().endsWith('@googlemail.com')));
+
+        if (isGmail) {
+            const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(trimmedEmail)}&cc=${encodeURIComponent(OFFICIAL_FEEDBACK_EMAIL)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(receiptBody)}`;
+            window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+        } else {
+            const mailtoUrl = `mailto:${encodeURIComponent(trimmedEmail)}?cc=${encodeURIComponent(OFFICIAL_FEEDBACK_EMAIL)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(receiptBody)}`;
+            const mailLink = document.createElement('a');
+            mailLink.href = mailtoUrl;
+            mailLink.target = '_blank';
+            mailLink.rel = 'noopener noreferrer';
+            document.body.appendChild(mailLink);
+            mailLink.click();
+            setTimeout(() => {
+                if (mailLink.parentNode) mailLink.parentNode.removeChild(mailLink);
+            }, 150);
+        }
+
+        return receiptBody;
+    }
+
+    function showFeedbackThankYou(payload = {}, isOffline = false) {
+        const OFFICIAL_FEEDBACK_EMAIL = 'fredianmherl.masas@bisu.edu.ph';
+        const lang = (typeof currentLang !== 'undefined' && translations[currentLang]) ? currentLang : 'en';
+        const t = translations[lang] || translations.en;
+
+        const titleText = t["t-thank-title"] || "Thank you for your feedback!!";
+        const descText = t["t-thank-desc"] || "Your feedback has been successfully submitted and recorded.";
+        const subText = t["t-thank-sub"] || "Thank you for taking the time to help us enhance the quality and delivery of services at Bohol Island State University.";
+        const btnDoneText = t["t-thank-btn-done"] || "Done";
+        const btnAnotherText = t["t-thank-btn-another"] || "Submit Another Feedback";
+
+        const officeName = payload.office_visited || document.getElementById('office-visited')?.value || '';
+        const serviceAvailed = payload.service_availed || '';
+        const clientType = payload.client_type || '';
+        const clientName = payload.client_name && payload.client_name !== 'Anonymous' ? payload.client_name : '';
+        const dateStr = payload.created_at 
+            ? new Date(payload.created_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : '';
+
+        let savedClientEmail = '';
+        try {
+            savedClientEmail = localStorage.getItem('bisu_client_email') || '';
+        } catch(e) {}
+        const defaultEmail = (payload.client_email || savedClientEmail || '').trim();
+
+        const offlineNotice = isOffline ? `
+            <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-bold flex items-center justify-center gap-2">
+                <i class="fa-solid fa-cloud-arrow-up text-amber-600"></i>
+                <span>Saved offline. Will sync automatically when internet is connected.</span>
+            </div>
+        ` : '';
+
+        const detailsCard = (clientName || officeName || serviceAvailed || clientType || dateStr) ? `
+            <div class="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 text-left text-xs space-y-2 mb-2 shadow-2xs">
+                ${clientName ? `
+                <div class="flex items-center justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]"><i class="fa-solid fa-user mr-1 text-[#22007c]"></i> Client Name</span>
+                    <span class="font-extrabold text-[#22007c]">${escapeHtml(clientName)}</span>
+                </div>` : ''}
+                ${officeName ? `
+                <div class="flex items-center justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]"><i class="fa-solid fa-building-columns mr-1 text-[#22007c]"></i> Office Visited</span>
+                    <span class="font-extrabold text-[#22007c]">${escapeHtml(officeName)}</span>
+                </div>` : ''}
+                ${serviceAvailed ? `
+                <div class="flex items-center justify-between border-b border-slate-200/60 pb-1.5">
+                    <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]"><i class="fa-solid fa-bell-concierge mr-1 text-slate-400"></i> Service Availed</span>
+                    <span class="font-semibold text-slate-800">${escapeHtml(serviceAvailed)}</span>
+                </div>` : ''}
+                ${clientType ? `
+                <div class="flex items-center justify-between ${dateStr ? 'border-b border-slate-200/60 pb-1.5' : ''}">
+                    <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]"><i class="fa-solid fa-user-tag mr-1 text-slate-400"></i> Client Type</span>
+                    <span class="font-semibold text-slate-800">${escapeHtml(clientType)}</span>
+                </div>` : ''}
+                ${dateStr ? `
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500 font-bold uppercase tracking-wider text-[10px]"><i class="fa-regular fa-calendar-check mr-1 text-slate-400"></i> Date & Time</span>
+                    <span class="font-semibold text-slate-800">${escapeHtml(dateStr)}</span>
+                </div>` : ''}
+            </div>
+        ` : '';
+
+        // Email Response Yes/No Option Module
+        const emailResponseOptionCard = `
+            <div id="email-response-card" class="bg-gradient-to-br from-blue-50/80 to-indigo-50/50 border border-blue-200 rounded-2xl p-3.5 text-left text-xs space-y-3 mb-2 shadow-2xs transition-all duration-200">
+                <div class="flex items-center justify-between">
+                    <span class="font-extrabold text-slate-800 flex items-center gap-1.5 text-xs">
+                        <i class="fa-solid fa-envelope text-[#22007c]"></i>
+                        <span>${t["t-email-ask"] || "Would you like to email a copy of your response?"}</span>
+                    </span>
+                </div>
+
+                <!-- Yes / No Choice Buttons -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" id="email-opt-yes-btn" class="py-2.5 px-3 rounded-xl border ${defaultEmail ? 'bg-blue-100 border-[#22007c] text-[#22007c] ring-2 ring-blue-400/40' : 'border-blue-300 text-blue-900 bg-white hover:bg-blue-50 hover:border-[#22007c]'} font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs">
+                        <i class="fa-solid fa-circle-check text-blue-600 text-xs"></i>
+                        <span>${t["t-email-opt-yes"] || "Yes, email my copy"}</span>
+                    </button>
+                    <button type="button" id="email-opt-no-btn" class="py-2.5 px-3 rounded-xl border border-slate-200 font-bold text-xs text-slate-600 bg-white hover:bg-slate-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs">
+                        <i class="fa-solid fa-circle-xmark text-slate-400 text-xs"></i>
+                        <span>${t["t-email-opt-no"] || "No, thanks"}</span>
+                    </button>
+                </div>
+
+                <!-- Dynamic Email Input Section (Appears when Yes is clicked or when prefilled) -->
+                <div id="email-input-container" class="${defaultEmail ? '' : 'hidden'} pt-2.5 border-t border-blue-200/70 space-y-2.5 animate-fade-in">
+                    <div>
+                        <label for="feedback-receipt-email" class="block text-[11px] font-bold text-slate-700 mb-1">
+                            ${t["t-email-placeholder"] || "Enter your email address..."}
+                        </label>
+                        <div class="relative">
+                            <input type="email" id="feedback-receipt-email" placeholder="e.g. user@gmail.com or email@example.com" value="${escapeHtml(defaultEmail)}" class="w-full bg-white border border-blue-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#22007c] shadow-2xs">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-1.5 pt-0.5">
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="btn-send-email-receipt" class="flex-1 bg-[#22007c] hover:bg-[#180058] text-white font-extrabold py-2 px-3 rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
+                                <i class="fa-solid fa-paper-plane text-[11px]"></i>
+                                <span id="btn-send-label">${t["t-email-send-btn"] || "Send Email Receipt"}</span>
+                            </button>
+                            <button type="button" id="btn-gmail-receipt" class="bg-white hover:bg-rose-50 border border-slate-300 hover:border-rose-300 text-slate-700 hover:text-rose-700 font-extrabold py-2 px-3 rounded-xl text-xs transition shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98" title="Open directly in Gmail Web">
+                                <i class="fa-brands fa-google text-red-500 text-xs"></i>
+                                <span>Gmail</span>
+                            </button>
+                        </div>
+
+                        <button type="button" id="btn-copy-receipt-text" title="Copy receipt text to clipboard" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-1.5 px-3 rounded-xl text-[11px] transition shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-copy text-[10px] text-[#22007c]"></i>
+                            <span>${t["t-email-copy-btn"] || "Copy Summary Text"}</span>
+                        </button>
+                    </div>
+                    <div id="email-receipt-status" class="text-[11px] text-center font-bold text-slate-600 pt-0.5 hidden"></div>
+                </div>
+            </div>
+        `;
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: `<div class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">${titleText}</div>`,
+                html: `
+                    <div class="space-y-3 text-center pt-2">
+                        <div class="w-16 h-16 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-600 flex items-center justify-center text-3xl mx-auto shadow-xs">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <p class="text-sm font-bold text-slate-800 leading-relaxed">
+                            ${descText}
+                        </p>
+                        ${detailsCard}
+                        ${emailResponseOptionCard}
+                        <p class="text-xs text-slate-500 font-medium leading-relaxed">
+                            ${subText}
+                        </p>
+                        ${offlineNotice}
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: `<i class="fa-solid fa-check mr-1.5"></i> ${btnDoneText}`,
+                cancelButtonText: `<i class="fa-solid fa-rotate-left mr-1.5"></i> ${btnAnotherText}`,
+                allowOutsideClick: true,
+                customClass: {
+                    popup: 'rounded-3xl border-t-8 border-[#22007c] shadow-2xl p-5 sm:p-6 max-w-md',
+                    confirmButton: 'bg-[#22007c] text-white font-black px-6 py-2.5 rounded-xl hover:bg-[#180058] transition shadow-md text-sm cursor-pointer',
+                    cancelButton: 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-xl transition text-sm cursor-pointer'
+                },
+                didOpen: (popup) => {
+                    const yesBtn = popup.querySelector('#email-opt-yes-btn');
+                    const noBtn = popup.querySelector('#email-opt-no-btn');
+                    const container = popup.querySelector('#email-input-container');
+                    const emailInput = popup.querySelector('#feedback-receipt-email');
+                    const sendBtn = popup.querySelector('#btn-send-email-receipt');
+                    const gmailBtn = popup.querySelector('#btn-gmail-receipt');
+                    const copyBtn = popup.querySelector('#btn-copy-receipt-text');
+                    const statusEl = popup.querySelector('#email-receipt-status');
+                    const sendLabel = popup.querySelector('#btn-send-label');
+
+                    if (emailInput) {
+                        emailInput.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                sendBtn?.click();
+                            }
+                        });
+                    }
+
+                    if (yesBtn && noBtn && container) {
+                        yesBtn.addEventListener('click', () => {
+                            container.classList.remove('hidden');
+                            yesBtn.classList.add('bg-blue-100', 'border-[#22007c]', 'text-[#22007c]', 'ring-2', 'ring-blue-400/40');
+                            yesBtn.classList.remove('bg-white');
+                            noBtn.classList.remove('bg-slate-200', 'border-slate-400', 'text-slate-900');
+                            noBtn.classList.add('bg-white');
+                            if (emailInput) {
+                                emailInput.focus();
+                            }
+                        });
+
+                        noBtn.addEventListener('click', () => {
+                            container.classList.add('hidden');
+                            noBtn.classList.add('bg-slate-200', 'border-slate-400', 'text-slate-900');
+                            noBtn.classList.remove('bg-white');
+                            yesBtn.classList.remove('bg-blue-100', 'border-[#22007c]', 'text-[#22007c]', 'ring-2', 'ring-blue-400/40');
+                            yesBtn.classList.add('bg-white');
+                            if (statusEl) {
+                                statusEl.classList.add('hidden');
+                                statusEl.textContent = '';
+                            }
+                        });
+                    }
+
+                    const handleEmailDispatch = (mode = 'auto') => {
+                        const enteredEmail = (emailInput?.value || '').trim();
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!enteredEmail || !emailRegex.test(enteredEmail)) {
+                            if (statusEl) {
+                                statusEl.innerHTML = `<span class="text-rose-600 font-bold"><i class="fa-solid fa-circle-exclamation mr-1"></i> ${t["t-email-invalid"] || "Please enter a valid email address."}</span>`;
+                                statusEl.classList.remove('hidden');
+                            }
+                            emailInput?.focus();
+                            return;
+                        }
+
+                        openFeedbackEmailReceipt(payload, enteredEmail, lang, mode);
+
+                        if (statusEl) {
+                            statusEl.innerHTML = `<span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check mr-1 text-emerald-600"></i> ${t["t-email-success-open"] || "Opening email app with feedback receipt..."}</span>`;
+                            statusEl.classList.remove('hidden');
+                        }
+                        showToast(`Prepared response for ${enteredEmail}`, 'info');
+                    };
+
+                    if (sendBtn) {
+                        sendBtn.addEventListener('click', () => handleEmailDispatch('auto'));
+                    }
+
+                    if (gmailBtn) {
+                        gmailBtn.addEventListener('click', () => handleEmailDispatch('gmail'));
+                    }
+
+                    if (copyBtn) {
+                        copyBtn.addEventListener('click', () => {
+                            const enteredEmail = (emailInput?.value || '').trim();
+                            const receiptText = generateFeedbackReceiptText(payload, lang, enteredEmail);
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(receiptText).then(() => {
+                                    if (statusEl) {
+                                        statusEl.innerHTML = `<span class="text-emerald-700 font-bold"><i class="fa-solid fa-check mr-1"></i> ${t["t-email-copied"] || "Response summary copied to clipboard!"}</span>`;
+                                        statusEl.classList.remove('hidden');
+                                    }
+                                    showToast(t["t-email-copied"] || "Response summary copied to clipboard!", 'success');
+                                }).catch(() => {
+                                    showToast("Response summary copied!", "success");
+                                });
+                            } else {
+                                showToast(t["t-email-copied"] || "Response summary copied to clipboard!", 'success');
+                            }
+                        });
+                    }
+                }
+            }).then(() => {
+                resetFeedbackForm();
+                // If URL contained office parameter (from QR code), preserve it
+                const urlParams = new URLSearchParams(window.location.search);
+                const officeParam = urlParams.get('office');
+                if (officeParam) {
+                    const officeSelect = document.getElementById('office-visited');
+                    if (officeSelect) {
+                        officeSelect.value = officeParam;
+                        const evt = new Event('change', { bubbles: true });
+                        officeSelect.dispatchEvent(evt);
+                    }
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        } else {
+            showToast(titleText, 'success');
+            resetFeedbackForm();
+        }
+    }
 
     feedbackForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -2417,21 +3593,60 @@ document.addEventListener('DOMContentLoaded', () => {
         const cc2Value = document.querySelector('input[name="cc2"]:checked')?.value;
         const cc3Value = document.querySelector('input[name="cc3"]:checked')?.value;
 
+        const clientNameInput = document.getElementById('client-name');
+        const clientNameValue = clientNameInput ? (clientNameInput.value || '').trim() : '';
+
+        const clientEmailInput = document.getElementById('client-email');
+        const clientEmailValue = clientEmailInput ? (clientEmailInput.value || '').trim() : '';
+        if (clientEmailValue) {
+            try {
+                localStorage.setItem('bisu_client_email', clientEmailValue);
+            } catch(e) {}
+        }
+
         const servedByInput = document.getElementById('served-by');
         const servedByValue = servedByInput ? (servedByInput.value || '').trim() : null;
 
         const regionSelect = document.getElementById('client-region');
         const regionValue = regionSelect ? (regionSelect.value || null) : null;
 
-        const ratingsPayload = { ...currentRatings };
+        // User's choice of time and day
+        const dateVisitedVal = (document.getElementById('date-visited')?.value || '').trim();
+        const timeVisitedVal = (document.getElementById('time-visited')?.value || '').trim();
+
+        let submissionTimestamp = new Date().toISOString();
+        if (dateVisitedVal) {
+            if (timeVisitedVal) {
+                const combinedDate = new Date(`${dateVisitedVal}T${timeVisitedVal}:00`);
+                if (!isNaN(combinedDate.getTime())) {
+                    submissionTimestamp = combinedDate.toISOString();
+                }
+            } else {
+                const combinedDate = new Date(`${dateVisitedVal}T12:00:00`);
+                if (!isNaN(combinedDate.getTime())) {
+                    submissionTimestamp = combinedDate.toISOString();
+                }
+            }
+        }
+
+        const ratingsPayload = { 
+            ...currentRatings,
+            client_name: clientNameValue || null,
+            client_email: clientEmailValue || null,
+            date_visited: dateVisitedVal || null,
+            time_visited: timeVisitedVal || null
+        };
 
         const payload = {
+            client_name: clientNameValue || 'Anonymous',
+            client_email: clientEmailValue || null,
             office_visited: document.getElementById('office-visited').value,
             service_availed: serviceValue,
             client_type: clientType,
             sex: document.getElementById('client-sex').value || null,
             served_by: servedByValue || null,
             region_of_residence: regionValue || null,
+            created_at: submissionTimestamp,
             cc1: parseInt(cc1Value || 0),
             cc2: parseInt(cc2Value || 0),
             cc3: parseInt(cc3Value || 0),
@@ -2447,30 +3662,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 let result = await insertEvaluations(client, [payload]);
                 if (result && result.error) {
                     const errMsg = (result.error.message || '').toLowerCase();
-                    if (result.error.code === '42703' || errMsg.includes('served_by') || errMsg.includes('region_of_residence') || errMsg.includes('column')) {
+                    if (result.error.code === '42703' || errMsg.includes('served_by') || errMsg.includes('region_of_residence') || errMsg.includes('client_name') || errMsg.includes('client_email') || errMsg.includes('column')) {
                         console.warn('Database is missing modern columns. Retrying with values embedded in ratings.');
                         const fallbackPayload = { ...payload };
                         fallbackPayload.ratings = { ...payload.ratings };
+                        if (payload.client_name) fallbackPayload.ratings.client_name = payload.client_name;
+                        if (payload.client_email) fallbackPayload.ratings.client_email = payload.client_email;
                         if (payload.served_by) fallbackPayload.ratings.served_by = payload.served_by;
                         if (payload.region_of_residence) fallbackPayload.ratings.region_of_residence = payload.region_of_residence;
+                        delete fallbackPayload.client_name;
+                        delete fallbackPayload.client_email;
                         delete fallbackPayload.served_by;
                         delete fallbackPayload.region_of_residence;
                         result = await insertEvaluations(client, [fallbackPayload]);
                     }
                 }
                 if (result && result.error) throw result.error;
-                showToast('Feedback submitted successfully!', 'success');
-                resetFeedbackForm();
+                showFeedbackThankYou(payload, false);
             } else {
                 saveOffline('pendingFeedbacks', payload);
-                showToast('Saved offline. Will sync when connected.', 'warning');
-                resetFeedbackForm();
+                showFeedbackThankYou(payload, true);
             }
         } catch (error) {
             console.error('Feedback insert failed:', error);
-            showToast(`Failed to submit (${error.message || 'unknown error'}). Saved offline.`, 'error');
             saveOffline('pendingFeedbacks', payload);
-            resetFeedbackForm();
+            showFeedbackThankYou(payload, true);
         } finally {
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<span class="text-lg">Submit My Feedback</span><i class="fa-solid fa-paper-plane group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>';
@@ -2479,35 +3695,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // CC Questions Logic
     document.querySelectorAll('input[name="cc1"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            const ccDetailsContainer = document.getElementById('cc-details-container');
-            if(e.target.value === '4') {
-                const cc2NA = document.querySelector('input[name="cc2"][value="5"]');
-                const cc3NA = document.querySelector('input[name="cc3"][value="4"]');
-                if (cc2NA) cc2NA.checked = true;
-                if (cc3NA) cc3NA.checked = true;
-
-                document.querySelectorAll('input[name="cc2"]').forEach(r => r.disabled = true);
-                document.querySelectorAll('input[name="cc3"]').forEach(r => r.disabled = true);
-
-                if (ccDetailsContainer) {
-                    ccDetailsContainer.classList.add('hidden');
-                }
-            } else {
-                document.querySelectorAll('input[name="cc2"]').forEach(r => r.disabled = false);
-                document.querySelectorAll('input[name="cc3"]').forEach(r => r.disabled = false);
-
-                if (ccDetailsContainer) {
-                    ccDetailsContainer.classList.remove('hidden');
-                }
-
-                const cc2NA = document.querySelector('input[name="cc2"][value="5"]');
-                const cc3NA = document.querySelector('input[name="cc3"][value="4"]');
-                if (cc2NA && cc2NA.checked) cc2NA.checked = false;
-                if (cc3NA && cc3NA.checked) cc3NA.checked = false;
-            }
+        radio.addEventListener('change', () => {
+            updateCitizenCharterState();
         });
     });
+
+    document.querySelectorAll('input[name="cc2"], input[name="cc3"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            checkFormCompletion();
+        });
+    });
+
+    if (feedbackForm) {
+        feedbackForm.addEventListener('input', checkFormCompletion);
+        feedbackForm.addEventListener('change', checkFormCompletion);
+    }
 
     complaintForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -2776,12 +3978,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let dim in currentRatings) {
             currentRatings[dim] = null;
         }
-        const ccDetailsContainer = document.getElementById('cc-details-container');
-        if (ccDetailsContainer) {
-            ccDetailsContainer.classList.remove('hidden');
-        }
-        document.querySelectorAll('input[name="cc2"]').forEach(r => r.disabled = false);
-        document.querySelectorAll('input[name="cc3"]').forEach(r => r.disabled = false);
+        updateCitizenCharterState();
 
         const customServiceContainer = document.getElementById('custom-service-container');
         const customInput = document.getElementById('service-availed-custom');
@@ -2795,6 +3992,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (officeSelect) {
             updateServiceOptions(officeSelect.value);
         }
+
+        initDateTimeInputs();
     }
 
     function showToast(message, type = 'info') {
@@ -3417,15 +4616,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const detailEl = document.getElementById('db-connection-detail');
         if (badge) {
             const styles = {
-                syncing: ['SYNCING', 'bg-amber-100 text-amber-700'],
-                connected: ['CONNECTED', 'bg-green-100 text-green-700 animate-pulse-soft'],
-                local: ['LOCAL', 'bg-amber-100 text-amber-800'],
-                error: ['DB ERROR', 'bg-red-100 text-red-700'],
-                offline: ['OFFLINE', 'bg-slate-100 text-slate-500']
+                syncing: ['SYNCING', 'bg-amber-50 text-amber-700 border border-amber-200'],
+                connected: ['LIVE', 'bg-emerald-50 text-emerald-700 border border-emerald-200'],
+                local: ['LOCAL CACHE', 'bg-amber-50 text-amber-800 border border-amber-200'],
+                error: ['DB ERROR', 'bg-red-50 text-red-700 border border-red-200'],
+                offline: ['OFFLINE', 'bg-slate-100 text-slate-600 border border-slate-200']
             };
             const [label, color] = styles[state] || styles.offline;
             badge.textContent = label;
-            badge.className = `${color} text-xs font-bold px-2 py-1 rounded ml-2 align-middle`;
+            badge.className = `${color} text-xs font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider`;
         }
         if (detailEl) detailEl.textContent = detail || '';
     }
@@ -3444,33 +4643,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 connectionState = 'offline';
                 connectionDetail = 'Supabase client unavailable.';
             } else {
+                let canQuery = false;
                 const { data: authData } = await client.auth.getUser();
                 const hasSession = !!authData?.user;
 
-                if (!hasSession) {
-                    connectionState = 'local';
-                    connectionDetail = localStorage.getItem('isLocalAdmin') === 'true'
-                        ? 'Local admin mode — use a Supabase Auth admin account for live database data.'
-                        : 'Not signed in to Supabase.';
-                } else {
+                if (hasSession) {
                     const adminAllowed = await isCurrentUserAdmin(client);
-                    if (!adminAllowed) {
+                    if (adminAllowed) {
+                        canQuery = true;
+                    } else {
                         connectionState = 'unauthorized';
                         connectionDetail = 'Signed in, but this account is not in admin_users.';
-                    } else {
-                        const { data: feedbackRows, error: fErr } = await selectEvaluations(client);
-                        if (fErr) throw fErr;
+                    }
+                } else if (localStorage.getItem('isLocalAdmin') === 'true' || localStorage.getItem('isLocalOfficeUser') === 'true') {
+                    // Local / Office session active - try live database query directly
+                    canQuery = true;
+                }
 
-                        const { data: complaintRows, error: cErr } = await client
-                            .from('complaints')
-                            .select('*')
-                            .order('created_at', { ascending: false });
-                        if (cErr) throw cErr;
+                if (canQuery) {
+                    const { data: feedbackRows, error: fErr } = await selectEvaluations(client);
+                    const { data: complaintRows, error: cErr } = await client
+                        .from('complaints')
+                        .select('*')
+                        .order('created_at', { ascending: false });
 
+                    if (!fErr && !cErr) {
                         fData = feedbackRows || [];
                         cData = complaintRows || [];
                         connectionState = 'connected';
                         connectionDetail = `Loaded ${fData.length} feedback(s) and ${cData.length} complaint(s) from database.`;
+                    } else {
+                        console.warn('Database query with client failed, checking fallback:', fErr || cErr);
+                        if (!hasSession) {
+                            connectionState = 'local';
+                            connectionDetail = 'Local cache mode — live cloud database query returned an error or required elevated auth.';
+                        } else {
+                            connectionState = 'error';
+                            connectionDetail = (fErr || cErr)?.message || 'Database request failed.';
+                        }
                     }
                 }
             }
@@ -3480,7 +4690,7 @@ document.addEventListener('DOMContentLoaded', () => {
             connectionDetail = err.message || 'Database request failed.';
         }
 
-        // Without a live DB session, show only locally queued submissions (no demo rows)
+        // Without a live DB session or in case of error, show only locally queued submissions
         if (connectionState !== 'connected') {
             const offlineFeedbacks = JSON.parse(localStorage.getItem('pendingFeedbacks')) || [];
             const offlineComplaints = JSON.parse(localStorage.getItem('pendingComplaints')) || [];
@@ -3507,6 +4717,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         lastFetchedFeedbacks = fData;
         lastFetchedComplaints = cData;
+
+        // Ensure role UI is updated
+        updateDashboardRoleUI();
 
         // Populate year filter based on fetched data dates
         populateYearFilter(fData, cData);
@@ -3560,38 +4773,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function applyFiltersAndRender() {
+        const dateInput = document.getElementById('filter-date-input');
         const monthSelect = document.getElementById('filter-month-select');
         const yearSelect = document.getElementById('filter-year-select');
+        const timeSelect = document.getElementById('filter-time-select');
         
+        const selectedDate = dateInput && dateInput.value ? dateInput.value.trim() : '';
         const selectedMonth = monthSelect ? monthSelect.value : 'all';
         const selectedYear = yearSelect ? yearSelect.value : 'all';
+        const selectedTime = timeSelect ? timeSelect.value : 'all';
         
-        lastFilteredFeedbacks = lastFetchedFeedbacks.filter(row => {
+        // Base scope filtering: if logged in as an assigned office, restrict records to that office!
+        let baseFeedbacks = lastFetchedFeedbacks;
+        let baseComplaints = lastFetchedComplaints;
+
+        if (currentUserRole === 'office' && currentOfficeScope) {
+            const scopeNorm = currentOfficeScope.toLowerCase().trim();
+            baseFeedbacks = baseFeedbacks.filter(row => (row.office_visited || '').toLowerCase().trim() === scopeNorm);
+            baseComplaints = baseComplaints.filter(row => (row.place_of_incident || '').toLowerCase().trim() === scopeNorm);
+        }
+
+        lastFilteredFeedbacks = baseFeedbacks.filter(row => {
             if (!row.created_at) return true;
             const d = new Date(row.created_at);
             if (isNaN(d.getTime())) return true;
             
             const rYear = d.getFullYear().toString();
             const rMonth = String(d.getMonth() + 1).padStart(2, '0');
+            const rDay = String(d.getDate()).padStart(2, '0');
+            const rDateStr = `${rYear}-${rMonth}-${rDay}`;
+            const rHour = d.getHours();
             
-            const matchesYear = selectedYear === 'all' || rYear === selectedYear;
-            const matchesMonth = selectedMonth === 'all' || rMonth === selectedMonth;
+            if (selectedDate && rDateStr !== selectedDate) return false;
+            if (selectedYear !== 'all' && rYear !== selectedYear) return false;
+            if (selectedMonth !== 'all' && rMonth !== selectedMonth) return false;
+            if (selectedTime === 'am' && rHour >= 12) return false;
+            if (selectedTime === 'pm' && rHour < 12) return false;
             
-            return matchesYear && matchesMonth;
+            return true;
         });
         
-        lastFilteredComplaints = lastFetchedComplaints.filter(row => {
+        lastFilteredComplaints = baseComplaints.filter(row => {
             if (!row.created_at) return true;
             const d = new Date(row.created_at);
             if (isNaN(d.getTime())) return true;
             
             const rYear = d.getFullYear().toString();
             const rMonth = String(d.getMonth() + 1).padStart(2, '0');
+            const rDay = String(d.getDate()).padStart(2, '0');
+            const rDateStr = `${rYear}-${rMonth}-${rDay}`;
+            const rHour = d.getHours();
             
-            const matchesYear = selectedYear === 'all' || rYear === selectedYear;
-            const matchesMonth = selectedMonth === 'all' || rMonth === selectedMonth;
+            if (selectedDate && rDateStr !== selectedDate) return false;
+            if (selectedYear !== 'all' && rYear !== selectedYear) return false;
+            if (selectedMonth !== 'all' && rMonth !== selectedMonth) return false;
+            if (selectedTime === 'am' && rHour >= 12) return false;
+            if (selectedTime === 'pm' && rHour < 12) return false;
             
-            return matchesYear && matchesMonth;
+            return true;
         });
         
         const statTotalEl = document.getElementById('stat-total');
@@ -4324,158 +5563,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function exportToPDF() {
-        if (!lastFilteredFeedbacks || lastFilteredFeedbacks.length === 0) {
+        const feedbacks = (typeof lastFilteredFeedbacks !== 'undefined' && lastFilteredFeedbacks) ? lastFilteredFeedbacks : [];
+        const complaints = (typeof lastFilteredComplaints !== 'undefined' && lastFilteredComplaints) ? lastFilteredComplaints : [];
+        if (feedbacks.length === 0 && complaints.length === 0) {
             showToast('No filtered data available to export.', 'error');
             return;
         }
 
-        Swal.fire({
-            title: 'Generating Official Report',
-            html: 'Formatting institutional data and analytics...',
-            didOpen: () => Swal.showLoading(),
-            allowOutsideClick: false,
-            customClass: { popup: 'rounded-3xl shadow-2xl border-t-4 border-bisu-blue' }
-        });
+        const isOffice = currentUserRole === 'office' && !!currentOfficeScope;
+        const reportTitle = isOffice 
+            ? `${currentOfficeScope.toUpperCase()} MONTHLY CUSTOMER SATISFACTION SUMMARY REPORT`
+            : 'MONTHLY CUSTOMER SATISFACTION SUMMARY REPORT';
+        const filePrefix = isOffice 
+            ? `BISU_${currentOfficeScope.replace(/[^a-zA-Z0-9]/g, '_')}_Summary_Report`
+            : 'BISU_Summary_Report';
 
-        try {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('l', 'mm', 'a4');
-
-            // Add Logos if cached
-            if (cachedLogos.bisu && cachedLogos.bisu.startsWith('data:')) {
-                try { doc.addImage(cachedLogos.bisu, 'WEBP', 20, 6, 16, 16); } catch (e) {}
-            }
-            if (cachedLogos.tuv && cachedLogos.tuv.startsWith('data:')) {
-                try { doc.addImage(cachedLogos.tuv, 'WEBP', 242, 6, 16, 16); } catch (e) {}
-            }
-            if (cachedLogos.bagongPilipinas && cachedLogos.bagongPilipinas.startsWith('data:')) {
-                try { doc.addImage(cachedLogos.bagongPilipinas, 'WEBP', 260, 6, 16, 16); } catch (e) {}
-            }
-
-            // Official Institutional Header (Helvetica Clean Sans Font)
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8);
-            doc.setTextColor(100, 116, 139);
-            doc.text('Republic of the Philippines', 148, 9, { align: 'center' });
-
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(13);
-            doc.setTextColor(15, 23, 42);
-            doc.text('BOHOL ISLAND STATE UNIVERSITY', 148, 14, { align: 'center' });
-
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9.5);
-            doc.setTextColor(51, 65, 85);
-            doc.text('Calape Campus, Calape, Bohol | Quality Management System', 148, 19, { align: 'center' });
-
-            doc.setDrawColor(51, 65, 85);
-            doc.setLineWidth(0.4);
-            doc.line(20, 22.5, 277, 22.5); // Header Divider Line
-
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(11);
-            doc.setTextColor(15, 23, 42);
-            doc.text('MONTHLY CUSTOMER SATISFACTION SUMMARY REPORT', 148, 29, { align: 'center' });
-
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8);
-            doc.setTextColor(100, 116, 139);
-            doc.text(`Generated via BISU-CSFS Admin System on ${new Date().toLocaleString()}`, 148, 34, { align: 'center' });
-
-            const activeDimensions = formConfig.dimensions['en'];
-            const headers = ['OFFICE / UNIT', 'CUST (f)', ...activeDimensions.map(d => d.label.split('.').pop().trim().toUpperCase()), 'MEAN', 'RATING'];
-
-            const officeStats = {};
-            lastFilteredFeedbacks.forEach(row => {
-                const off = row.office_visited || 'General Office';
-                if (!officeStats[off]) {
-                    officeStats[off] = { count: 0, mean: 0, dims: {} };
-                    activeDimensions.forEach(d => officeStats[off].dims[d.id] = 0);
-                }
-                officeStats[off].count++;
-                officeStats[off].mean += parseFloat(row.mean_score || 0);
-                const r = row.ratings || row || {};
-                activeDimensions.forEach(d => officeStats[off].dims[d.id] += parseInt(r[d.id] || 0));
-            });
-
-            const body = Object.keys(officeStats).map(o => {
-                const s = officeStats[o];
-                return [o, s.count, ...activeDimensions.map(d => (s.dims[d.id] / s.count).toFixed(2)), (s.mean / s.count).toFixed(2), getDesc(s.mean / s.count).toUpperCase()];
-            });
-
-            doc.autoTable({
-                startY: 38,
-                head: [headers],
-                body: body,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [22, 18, 117],
-                    textColor: [255, 255, 255],
-                    fontSize: 6.5,
-                    fontStyle: 'bold',
-                    font: 'helvetica',
-                    halign: 'center',
-                    valign: 'middle',
-                    cellPadding: 2
-                },
-                styles: {
-                    font: 'helvetica',
-                    fontSize: 7.5,
-                    cellPadding: 2,
-                    halign: 'center',
-                    valign: 'middle',
-                    lineColor: [0, 0, 0],
-                    lineWidth: 0.1
-                },
-                columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } }
-            });
-
-            // Clean Institutional Sign-off Footer
-            const finalY = doc.previousAutoTable.finalY + 14;
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8.5);
-            doc.setTextColor(15, 23, 42);
-
-            // Column 1: Prepared by
-            doc.text('Prepared by:', 20, finalY);
-            doc.line(20, finalY + 11, 95, finalY + 11);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(8);
-            doc.text('CSAT CHAIRPERSON', 20, finalY + 15);
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7.5);
-            doc.text('Chairperson, Customer Satisfaction Assessment Team', 20, finalY + 19);
-
-            // Column 2: Verified by
-            doc.text('Verified by:', 202, finalY);
-            doc.line(202, finalY + 11, 277, finalY + 11);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(8);
-            doc.text('CAMPUS QA DIRECTOR', 202, finalY + 15);
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7.5);
-            doc.text('Campus Quality Assurance Director', 202, finalY + 19);
-
-            // Document Code Footer Line
-            doc.setFontSize(7);
-            doc.setTextColor(100, 116, 139);
-            doc.line(20, 198, 277, 198);
-            doc.text('Document Code: F-AQA-CSF-001 | Revision: 03 | Effectivity: September 2025', 20, 202);
-            doc.text('Bohol Island State University • Quality Management System', 277, 202, { align: 'right' });
-
-            const dataUri = doc.output('datauristring');
-            const dateStr = new Date().toISOString().split('T')[0];
-            
-            Swal.close();
-            setTimeout(() => {
-                triggerDownload(dataUri, `BISU_Summary_Report_${dateStr}.pdf`);
-                showToast('Official PDF Exported.', 'success');
-            }, 300);
-        } catch (err) {
-            console.error(err);
-            Swal.close();
-            showToast('Export failed.', 'error');
-        }
+        await generatePDFForDataset(feedbacks, complaints, reportTitle, filePrefix);
     }
 
     // Export helper
@@ -4487,132 +5590,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return 'Poor';
     }
 
-    // --- Excel Spreadsheet Formatting Engine ---
-    function applyExcelStyles(ws, headerRowIndex = 4) {
-        if (!ws || !ws['!ref']) return;
-        const range = XLSX.utils.decode_range(ws['!ref']);
-        
-        for (let R = range.s.r; R <= range.e.r; ++R) {
-            for (let C = range.s.c; C <= range.e.c; ++C) {
-                const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
-                if (!ws[cellRef]) continue;
-
-                if (R === 0) {
-                    // Header Banner Title (BISU Royal Navy Blue)
-                    ws[cellRef].s = {
-                        fill: { fgColor: { rgb: "22007C" } },
-                        font: { name: "Calibri", sz: 14, bold: true, color: { rgb: "FFFFFF" } },
-                        alignment: { horizontal: "left", vertical: "center" }
-                    };
-                } else if (R === 1) {
-                    // Sheet Title (BISU Gold text on Dark Navy fill)
-                    ws[cellRef].s = {
-                        fill: { fgColor: { rgb: "180058" } },
-                        font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFD500" } },
-                        alignment: { horizontal: "left", vertical: "center" }
-                    };
-                } else if (R === 2) {
-                    // Report Metadata (Light Slate fill)
-                    ws[cellRef].s = {
-                        fill: { fgColor: { rgb: "F1F5F9" } },
-                        font: { name: "Calibri", sz: 10, italic: true, color: { rgb: "475569" } },
-                        alignment: { horizontal: "left", vertical: "center" }
-                    };
-                } else if (R === headerRowIndex) {
-                    // Table Column Headers (BISU Royal Navy fill + Gold bottom border)
-                    ws[cellRef].s = {
-                        fill: { fgColor: { rgb: "22007C" } },
-                        font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFFFFF" } },
-                        alignment: { horizontal: "center", vertical: "center", wrapText: true },
-                        border: {
-                            top: { style: "thin", color: { rgb: "180058" } },
-                            bottom: { style: "medium", color: { rgb: "FFD500" } },
-                            left: { style: "thin", color: { rgb: "334155" } },
-                            right: { style: "thin", color: { rgb: "334155" } }
-                        }
-                    };
-                } else if (R > headerRowIndex) {
-                    // Table Data Rows (Alternating zebra white / slate tint)
-                    const isEven = (R % 2 === 0);
-                    ws[cellRef].s = {
-                        fill: { fgColor: { rgb: isEven ? "F8FAFC" : "FFFFFF" } },
-                        font: { name: "Calibri", sz: 10, color: { rgb: "1E293B" } },
-                        alignment: { vertical: "center" },
-                        border: {
-                            top: { style: "thin", color: { rgb: "E2E8F0" } },
-                            bottom: { style: "thin", color: { rgb: "E2E8F0" } },
-                            left: { style: "thin", color: { rgb: "E2E8F0" } },
-                            right: { style: "thin", color: { rgb: "E2E8F0" } }
-                        }
-                    };
-                }
-            }
-        }
-    }
-
-    function buildFormattedExcelSheet(dataArray, sheetTitle, subtitleInfo) {
-        const ws = XLSX.utils.json_to_sheet([]);
-
-        if (!dataArray || dataArray.length === 0) {
-            XLSX.utils.sheet_add_aoa(ws, [
-                ["BOHOL ISLAND STATE UNIVERSITY - CALAPE CAMPUS"],
-                [sheetTitle.toUpperCase()],
-                [subtitleInfo],
-                [],
-                ["No records found for this dataset."]
-            ], { origin: "A1" });
-            ws['!cols'] = [{ wch: 45 }];
-            applyExcelStyles(ws, 4);
-            return ws;
-        }
-
-        // Add Header Title Rows
-        XLSX.utils.sheet_add_aoa(ws, [
-            ["BOHOL ISLAND STATE UNIVERSITY - CALAPE CAMPUS"],
-            [sheetTitle.toUpperCase()],
-            [subtitleInfo],
-            [] // Blank spacing row
-        ], { origin: "A1" });
-
-        // Add JSON dataset starting at A5
-        XLSX.utils.sheet_add_json(ws, dataArray, { origin: "A5" });
-
-        // Calculate auto column widths based on content
-        const headers = Object.keys(dataArray[0]);
-        const colWidths = headers.map(key => {
-            let maxLen = key.length;
-            dataArray.forEach(row => {
-                const valStr = String(row[key] ?? '');
-                if (valStr.includes('\n')) {
-                    valStr.split('\n').forEach(l => {
-                        if (l.length > maxLen) maxLen = l.length;
-                    });
-                } else if (valStr.length > maxLen) {
-                    maxLen = valStr.length;
-                }
-            });
-            return { wch: Math.min(Math.max(maxLen + 4, 12), 65) };
-        });
-        ws['!cols'] = colWidths;
-
-        // AutoFilter on header row (row 5 / index 4)
-        const startRow = 4;
-        const endRow = startRow + dataArray.length;
-        const endCol = headers.length - 1;
-        ws['!autofilter'] = {
-            ref: XLSX.utils.encode_range({
-                s: { r: startRow, c: 0 },
-                e: { r: endRow, c: endCol }
-            })
-        };
-
-        applyExcelStyles(ws, 4);
-
-        return ws;
-    }
-
+    // --- Professional Excel Spreadsheet Formatting Engine ---
     function buildExecutiveSummarySheet(feedbacks, complaints, reportTitle) {
-        const ws = XLSX.utils.json_to_sheet([]);
         const nowStr = new Date().toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' });
 
         let totalScore = 0;
@@ -4632,51 +5611,347 @@ document.addEventListener('DOMContentLoaded', () => {
         const overallAvg = validScoreCount > 0 ? (totalScore / validScoreCount) : 0;
         const overallRatingText = overallAvg > 0 ? `${overallAvg.toFixed(2)} / 5.00 (${getDesc(overallAvg)})` : 'N/A';
 
-        let topOffice = 'N/A';
-        let maxCount = 0;
+        let topOfficeName = 'None';
+        let topOfficeCount = 0;
         Object.entries(officeCounts).forEach(([off, count]) => {
-            if (count > maxCount) {
-                maxCount = count;
-                topOffice = `${off} (${count} record${count > 1 ? 's' : ''})`;
+            if (count > topOfficeCount) {
+                topOfficeCount = count;
+                topOfficeName = off;
             }
         });
+        const totalF = feedbacks.length || 0;
+        const topOfficeDetail = topOfficeCount > 0 
+            ? `${topOfficeName} (${topOfficeCount} records, ${((topOfficeCount / (totalF || 1)) * 100).toFixed(1)}%)`
+            : 'N/A';
 
-        const summaryRows = [
-            ["BOHOL ISLAND STATE UNIVERSITY - CALAPE CAMPUS"],
-            ["EXECUTIVE SUMMARY REPORT"],
-            [`Report Scope: ${reportTitle} | Generated: ${nowStr}`],
-            [],
-            ["KEY PERFORMANCE INDICATORS (KPIs)"],
-            ["Metric / Category", "Summary Value"],
-            ["Total Client Feedback Records", feedbacks.length],
-            ["Overall Mean Satisfaction Rating", overallRatingText],
-            ["Total Formal Complaints", complaints.length],
-            ["Top Visited Office", topOffice],
-            [],
-            ["OFFICE FEEDBACK DISTRIBUTION"],
-            ["Office / Unit Visited", "Feedback Count", "Percentage Share"]
+        // Construct 3-column structured dataset
+        const aoa = [
+            ["BOHOL ISLAND STATE UNIVERSITY - CALAPE CAMPUS", "", ""], // Row 0 (A1:C1)
+            ["EXECUTIVE SUMMARY & PERFORMANCE REPORT", "", ""],        // Row 1 (A2:C2)
+            [`Report Scope: ${reportTitle} | Generated: ${nowStr}`, "", ""], // Row 2 (A3:C3)
+            ["", "", ""],                                             // Row 3 (A4:C4) - blank spacing
+            ["KEY PERFORMANCE INDICATORS (KPIs)", "", ""],           // Row 4 (A5:C5)
+            ["Metric / Category", "Summary Value", "Qualitative Assessment / Details"], // Row 5 (A6:C6)
+            ["Total Client Feedback Records", feedbacks.length, feedbacks.length > 0 ? "Total Client Evaluations Received" : "No Records"],
+            ["Overall Mean Satisfaction Rating", overallAvg > 0 ? Number(overallAvg.toFixed(2)) : "N/A", overallRatingText],
+            ["Total Formal Complaints Filed", complaints.length, complaints.length === 0 ? "Zero Complaints (Clean Record)" : "Formal Complaints Logged"],
+            ["Top Visited Office / Unit", topOfficeCount > 0 ? topOfficeName : "N/A", topOfficeDetail],
+            ["", "", ""],                                             // Row 10 - blank spacing
+            ["OFFICE & SERVICE UNIT FEEDBACK DISTRIBUTION", "", ""],  // Row 11 (A12:C12)
+            ["Office / Unit Visited", "Feedback Count", "Percentage Share"] // Row 12 (A13:C13)
         ];
 
-        const totalF = feedbacks.length || 1;
         const sortedOffices = Object.entries(officeCounts).sort((a, b) => b[1] - a[1]);
+        const officeStartRow = aoa.length;
         if (sortedOffices.length === 0) {
-            summaryRows.push(["No office data recorded", 0, "0%"]);
+            aoa.push(["No office feedback data recorded", 0, "0.0%"]);
         } else {
             sortedOffices.forEach(([off, count]) => {
-                const pct = ((count / totalF) * 100).toFixed(1) + '%';
-                summaryRows.push([off, count, pct]);
+                const pct = ((count / (totalF || 1)) * 100).toFixed(1) + '%';
+                aoa.push([off, count, pct]);
             });
+            // Total Summary Row
+            aoa.push(["TOTAL FEEDBACK VOLUME", totalF, "100.0%"]);
         }
 
-        XLSX.utils.sheet_add_aoa(ws, summaryRows, { origin: "A1" });
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-        ws['!cols'] = [
-            { wch: 38 },
-            { wch: 32 },
-            { wch: 20 }
+        // Header Merges
+        ws['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }, // A1:C1
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } }, // A2:C2
+            { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } }, // A3:C3
+            { s: { r: 4, c: 0 }, e: { r: 4, c: 2 } }, // A5:C5 (KPI Section Header)
+            { s: { r: 11, c: 0 }, e: { r: 11, c: 2 } } // A12:C12 (Office Section Header)
         ];
 
-        applyExcelStyles(ws, 5);
+        // Column Widths
+        ws['!cols'] = [
+            { wch: 38 }, // Column A
+            { wch: 22 }, // Column B
+            { wch: 36 }  // Column C
+        ];
+
+        // Row Heights
+        const rowHeights = [
+            { hpt: 28 }, // 0: Main Title
+            { hpt: 22 }, // 1: Subtitle
+            { hpt: 18 }, // 2: Metadata
+            { hpt: 10 }, // 3: Spacer
+            { hpt: 24 }, // 4: KPI Header
+            { hpt: 22 }, // 5: KPI Col Headers
+            { hpt: 20 }, // 6: KPI 1
+            { hpt: 20 }, // 7: KPI 2
+            { hpt: 20 }, // 8: KPI 3
+            { hpt: 20 }, // 9: KPI 4
+            { hpt: 10 }, // 10: Spacer
+            { hpt: 24 }, // 11: Office Header
+            { hpt: 22 }  // 12: Office Col Headers
+        ];
+        for (let i = officeStartRow; i < aoa.length; i++) {
+            rowHeights.push({ hpt: 20 });
+        }
+        ws['!rows'] = rowHeights;
+
+        // Apply Styles
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+                const cell = ws[cellRef];
+
+                if (R === 0) {
+                    // Header Banner Title (BISU Deep Royal Navy Blue)
+                    cell.s = {
+                        fill: { fgColor: { rgb: "180058" } },
+                        font: { name: "Calibri", sz: 14, bold: true, color: { rgb: "FFFFFF" } },
+                        alignment: { horizontal: "center", vertical: "center" }
+                    };
+                } else if (R === 1) {
+                    // Sheet Subtitle (BISU Navy with Gold text)
+                    cell.s = {
+                        fill: { fgColor: { rgb: "22007C" } },
+                        font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFD500" } },
+                        alignment: { horizontal: "center", vertical: "center" }
+                    };
+                } else if (R === 2) {
+                    // Scope / Metadata (Soft Slate Fill)
+                    cell.s = {
+                        fill: { fgColor: { rgb: "F1F5F9" } },
+                        font: { name: "Calibri", sz: 9.5, italic: true, color: { rgb: "475569" } },
+                        alignment: { horizontal: "center", vertical: "center" }
+                    };
+                } else if (R === 4 || R === 11) {
+                    // Section Banners (Deep Indigo + Gold Accent)
+                    cell.s = {
+                        fill: { fgColor: { rgb: "1E1B4B" } },
+                        font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFD500" } },
+                        alignment: { horizontal: "left", vertical: "center", indent: 1 },
+                        border: {
+                            top: { style: "medium", color: { rgb: "22007C" } },
+                            bottom: { style: "medium", color: { rgb: "FFD500" } }
+                        }
+                    };
+                } else if (R === 5 || R === 12) {
+                    // Table Column Headers (Royal Navy)
+                    cell.s = {
+                        fill: { fgColor: { rgb: "22007C" } },
+                        font: { name: "Calibri", sz: 10, bold: true, color: { rgb: "FFFFFF" } },
+                        alignment: { horizontal: C === 0 ? "left" : "center", vertical: "center" },
+                        border: {
+                            top: { style: "thin", color: { rgb: "180058" } },
+                            bottom: { style: "medium", color: { rgb: "FFD500" } },
+                            left: { style: "thin", color: { rgb: "334155" } },
+                            right: { style: "thin", color: { rgb: "334155" } }
+                        }
+                    };
+                } else if ((R >= 6 && R <= 9) || (R >= 13 && R < aoa.length - 1)) {
+                    // Data Rows (Alternating Zebra Striping)
+                    const isEven = (R % 2 === 0);
+                    cell.s = {
+                        fill: { fgColor: { rgb: isEven ? "F8FAFC" : "FFFFFF" } },
+                        font: { name: "Calibri", sz: 10, color: { rgb: "1E293B" }, bold: (R >= 6 && R <= 9 && C === 0) },
+                        alignment: { 
+                            horizontal: C === 0 ? "left" : (C === 1 ? "center" : (R >= 6 && R <= 9 ? "left" : "center")), 
+                            vertical: "center" 
+                        },
+                        border: {
+                            top: { style: "thin", color: { rgb: "E2E8F0" } },
+                            bottom: { style: "thin", color: { rgb: "E2E8F0" } },
+                            left: { style: "thin", color: { rgb: "E2E8F0" } },
+                            right: { style: "thin", color: { rgb: "E2E8F0" } }
+                        }
+                    };
+                } else if (R === aoa.length - 1 && sortedOffices.length > 0) {
+                    // Total Summary Row at bottom
+                    cell.s = {
+                        fill: { fgColor: { rgb: "E2E8F0" } },
+                        font: { name: "Calibri", sz: 10, bold: true, color: { rgb: "0F172A" } },
+                        alignment: { horizontal: C === 0 ? "left" : "center", vertical: "center" },
+                        border: {
+                            top: { style: "thin", color: { rgb: "94A3B8" } },
+                            bottom: { style: "double", color: { rgb: "1E293B" } },
+                            left: { style: "thin", color: { rgb: "CBD5E1" } },
+                            right: { style: "thin", color: { rgb: "CBD5E1" } }
+                        }
+                    };
+                }
+            }
+        }
+
+        return ws;
+    }
+
+    function buildFormattedExcelSheet(dataArray, sheetTitle, subtitleInfo) {
+        if (!dataArray || dataArray.length === 0) {
+            const wsEmpty = XLSX.utils.aoa_to_sheet([
+                ["BOHOL ISLAND STATE UNIVERSITY - CALAPE CAMPUS"],
+                [sheetTitle.toUpperCase()],
+                [subtitleInfo],
+                [],
+                ["No records available for this report criteria."]
+            ]);
+            wsEmpty['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+                { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+                { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } }
+            ];
+            wsEmpty['!cols'] = [{ wch: 45 }, { wch: 20 }, { wch: 20 }, { wch: 20 }];
+            return wsEmpty;
+        }
+
+        const headers = Object.keys(dataArray[0]);
+        const numCols = headers.length;
+
+        // Header Banner Rows
+        const aoaHeaders = [
+            [ "BOHOL ISLAND STATE UNIVERSITY - CALAPE CAMPUS" ],
+            [ sheetTitle.toUpperCase() ],
+            [ subtitleInfo ],
+            [] // Blank spacer
+        ];
+
+        // Pad banner rows to match column count
+        aoaHeaders.forEach(row => {
+            while (row.length < numCols) row.push("");
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(aoaHeaders);
+
+        // Append JSON records starting at row 5 (index 4)
+        XLSX.utils.sheet_add_json(ws, dataArray, { origin: "A5" });
+
+        // Merges for full width banner
+        ws['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: numCols - 1 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: numCols - 1 } },
+            { s: { r: 2, c: 0 }, e: { r: 2, c: numCols - 1 } }
+        ];
+
+        // Smart column width calculation
+        const colWidths = headers.map(key => {
+            let maxLen = key.length;
+            dataArray.forEach(row => {
+                const valStr = String(row[key] ?? '');
+                if (valStr.includes('\n')) {
+                    valStr.split('\n').forEach(l => {
+                        if (l.length > maxLen) maxLen = l.length;
+                    });
+                } else if (valStr.length > maxLen) {
+                    maxLen = valStr.length;
+                }
+            });
+
+            if (/Commendations|Suggestions|Narrative|Act Complained Of|Expected Resolution/i.test(key)) {
+                return { wch: Math.min(Math.max(maxLen + 4, 25), 45) };
+            }
+            if (/Timestamp|Date/i.test(key)) {
+                return { wch: Math.max(maxLen + 4, 20) };
+            }
+            return { wch: Math.min(Math.max(maxLen + 4, 13), 36) };
+        });
+        ws['!cols'] = colWidths;
+
+        // Row Heights
+        const rowHeights = [
+            { hpt: 28 }, // 0: Main Title
+            { hpt: 22 }, // 1: Subtitle
+            { hpt: 18 }, // 2: Metadata
+            { hpt: 10 }, // 3: Spacer
+            { hpt: 26 }  // 4: Table Column Headers
+        ];
+        dataArray.forEach(() => {
+            rowHeights.push({ hpt: 22 });
+        });
+        ws['!rows'] = rowHeights;
+
+        // AutoFilter on Table Header (Row 5 / index 4)
+        const startRow = 4;
+        const endRow = startRow + dataArray.length;
+        ws['!autofilter'] = {
+            ref: XLSX.utils.encode_range({
+                s: { r: startRow, c: 0 },
+                e: { r: endRow, c: numCols - 1 }
+            })
+        };
+
+        // Apply formatting & cell styles
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+                const cell = ws[cellRef];
+                const headerKey = headers[C] || '';
+
+                if (R === 0) {
+                    // Header Banner Title (BISU Deep Royal Navy Blue)
+                    cell.s = {
+                        fill: { fgColor: { rgb: "180058" } },
+                        font: { name: "Calibri", sz: 13, bold: true, color: { rgb: "FFFFFF" } },
+                        alignment: { horizontal: "center", vertical: "center" }
+                    };
+                } else if (R === 1) {
+                    // Subtitle (BISU Navy with Gold text)
+                    cell.s = {
+                        fill: { fgColor: { rgb: "22007C" } },
+                        font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFD500" } },
+                        alignment: { horizontal: "center", vertical: "center" }
+                    };
+                } else if (R === 2) {
+                    // Scope / Metadata (Soft Slate)
+                    cell.s = {
+                        fill: { fgColor: { rgb: "F1F5F9" } },
+                        font: { name: "Calibri", sz: 9.5, italic: true, color: { rgb: "475569" } },
+                        alignment: { horizontal: "center", vertical: "center" }
+                    };
+                } else if (R === 4) {
+                    // Table Column Headers (Deep Royal Navy + Gold Bottom Border)
+                    cell.s = {
+                        fill: { fgColor: { rgb: "180058" } },
+                        font: { name: "Calibri", sz: 10, bold: true, color: { rgb: "FFFFFF" } },
+                        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+                        border: {
+                            top: { style: "thin", color: { rgb: "180058" } },
+                            bottom: { style: "medium", color: { rgb: "FFD500" } },
+                            left: { style: "thin", color: { rgb: "334155" } },
+                            right: { style: "thin", color: { rgb: "334155" } }
+                        }
+                    };
+                } else if (R > 4) {
+                    // Table Data Rows (Alternating Zebra Rows)
+                    const isEven = (R % 2 === 0);
+                    const isCenteredCol = /Timestamp|Date|Mean Rating Score|Rating Assessment|CC1|CC2|CC3|Sex|Category|Feedback Category/i.test(headerKey);
+                    const isLongTextCol = /Commendations|Suggestions|Narrative|Act Complained Of|Expected Resolution/i.test(headerKey);
+
+                    cell.s = {
+                        fill: { fgColor: { rgb: isEven ? "F8FAFC" : "FFFFFF" } },
+                        font: { name: "Calibri", sz: 9.5, color: { rgb: "1E293B" } },
+                        alignment: { 
+                            horizontal: isCenteredCol ? "center" : "left", 
+                            vertical: "center",
+                            wrapText: isLongTextCol
+                        },
+                        border: {
+                            top: { style: "thin", color: { rgb: "E2E8F0" } },
+                            bottom: { style: "thin", color: { rgb: "E2E8F0" } },
+                            left: { style: "thin", color: { rgb: "E2E8F0" } },
+                            right: { style: "thin", color: { rgb: "E2E8F0" } }
+                        }
+                    };
+
+                    if (/Rating Assessment/i.test(headerKey)) {
+                        const txt = String(cell.v || '');
+                        if (txt === 'Outstanding' || txt === 'Very Satisfactory') {
+                            cell.s.font = { name: "Calibri", sz: 9.5, bold: true, color: { rgb: "0E811B" } };
+                        } else if (txt === 'Poor' || txt === 'Fair') {
+                            cell.s.font = { name: "Calibri", sz: 9.5, bold: true, color: { rgb: "DC2626" } };
+                        }
+                    }
+                }
+            }
+        }
 
         return ws;
     }
@@ -4700,7 +5975,13 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const wb = XLSX.utils.book_new();
             const dateStr = new Date().toISOString().split('T')[0];
-            const reportTitle = `Live Data Export (${dateStr})`;
+            const isOffice = currentUserRole === 'office' && !!currentOfficeScope;
+            const reportTitle = isOffice 
+                ? `${currentOfficeScope} Live Data Export (${dateStr})`
+                : `Live Data Export (${dateStr})`;
+            const filename = isOffice 
+                ? `BISU_${currentOfficeScope.replace(/[^a-zA-Z0-9]/g, '_')}_Feedback_Data_${dateStr}.xlsx`
+                : `BISU_Feedback_Data_${dateStr}.xlsx`;
 
             // 1. Executive Summary Sheet
             const summaryWs = buildExecutiveSummarySheet(feedbacks, complaints, reportTitle);
@@ -4712,6 +5993,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const score = f.mean_score ? parseFloat(f.mean_score) : null;
                     return {
                         'Submission Timestamp': f.created_at ? new Date(f.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A',
+                        'Client Name': f.client_name || (f.ratings && f.ratings.client_name) || 'Anonymous',
                         'Target Office': f.office_visited || 'N/A',
                         'Service Availed': f.service_availed || 'N/A',
                         'Client Category': f.client_type || 'N/A',
@@ -4753,7 +6035,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             Swal.close();
             setTimeout(() => {
-                triggerDownload(dataUri, `BISU_Feedback_Data_${dateStr}.xlsx`);
+                triggerDownload(dataUri, filename);
                 showToast('Formatted Excel Report Exported.', 'success');
             }, 300);
         } catch (err) {
@@ -5316,7 +6598,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function generatePDFForDataset(feedbacks = [], complaints = [], title = 'MONTHLY CUSTOMER SATISFACTION SUMMARY REPORT', filenamePrefix = 'BISU_Report') {
+    async function generatePDFForDataset(feedbacks = [], complaints = [], title = 'MONTHLY CUSTOMER SATISFACTION SUMMARY REPORT', filenamePrefix = 'BISU_Report') {
         if (feedbacks.length === 0 && complaints.length === 0) {
             showToast('No data available to export.', 'error');
             return;
@@ -5324,16 +6606,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         Swal.fire({
             title: 'Generating PDF Report',
-            html: 'Formatting document with institutional template...',
+            html: 'Formatting institutional document layout...',
             didOpen: () => Swal.showLoading(),
             allowOutsideClick: false,
-            customClass: { popup: 'rounded-3xl shadow-xl border-t-4 border-bisu-blue' }
+            customClass: { popup: 'rounded-3xl shadow-xl border-t-4 border-[#22007c]' }
         });
 
         try {
+            // Ensure logo cache is initialized
+            if (window.EMBEDDED_LOGOS) {
+                if (!cachedLogos.bisu && window.EMBEDDED_LOGOS.bisu) cachedLogos.bisu = window.EMBEDDED_LOGOS.bisu;
+                if (!cachedLogos.bagongPilipinas && window.EMBEDDED_LOGOS.bagongPilipinas) cachedLogos.bagongPilipinas = window.EMBEDDED_LOGOS.bagongPilipinas;
+                if (!cachedLogos.tuv && window.EMBEDDED_LOGOS.tuv) cachedLogos.tuv = window.EMBEDDED_LOGOS.tuv;
+            }
+            if (!cachedLogos.bisu) {
+                cachedLogos.bisu = await fetchAsPngDataUrl('/images/BISU_sm.png');
+            }
+            if (!cachedLogos.bagongPilipinas) {
+                cachedLogos.bagongPilipinas = await fetchAsPngDataUrl('/images/BP_sm.png');
+            }
+            if (!cachedLogos.tuv) {
+                cachedLogos.tuv = await fetchAsPngDataUrl('/images/TUV_sm.png');
+            }
+
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'mm', 'a4');
 
+            // Draw Logos on first page
             if (cachedLogos.bisu && cachedLogos.bisu.startsWith('data:')) {
                 try { doc.addImage(cachedLogos.bisu, 'PNG', 20, 6, 16, 16); } catch (e) {}
             }
@@ -5344,6 +6643,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try { doc.addImage(cachedLogos.bagongPilipinas, 'PNG', 260, 6, 16, 16); } catch (e) {}
             }
 
+            // Institutional Header
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(100, 116, 139);
@@ -5351,11 +6651,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(13);
-            doc.setTextColor(15, 23, 42);
+            doc.setTextColor(22, 18, 117);
             doc.text('BOHOL ISLAND STATE UNIVERSITY', 148, 14, { align: 'center' });
 
             doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9.5);
+            doc.setFontSize(9);
             doc.setTextColor(51, 65, 85);
             doc.text('Calape Campus, Calape, Bohol | Quality Management System', 148, 19, { align: 'center' });
 
@@ -5366,27 +6666,44 @@ document.addEventListener('DOMContentLoaded', () => {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(11);
             doc.setTextColor(15, 23, 42);
-            doc.text(title.toUpperCase(), 148, 29, { align: 'center' });
+            doc.text(title.toUpperCase(), 148, 28, { align: 'center' });
 
             const periodStr = getAssessmentPeriodStr(title, feedbacks, complaints);
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(100, 116, 139);
-            doc.text(`Assessment Period: ${periodStr} | Generated on ${new Date().toLocaleDateString()} | Total Records: ${feedbacks.length + complaints.length}`, 148, 34, { align: 'center' });
+            doc.text(`Assessment Period: ${periodStr} | Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} | Total Records: ${feedbacks.length + complaints.length}`, 148, 33, { align: 'center' });
 
             let currentY = 38;
 
             if (feedbacks.length > 0) {
-                // Table A: Citizen's Charter Summary
+                // Table A: Citizen's Charter Summary Result
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(9);
                 doc.setTextColor(34, 0, 124);
-                doc.text('A. CITIZEN\'S CHARTER SUMMARY RESULT', 20, currentY);
-                currentY += 4;
+                doc.text("A. CITIZEN'S CHARTER SUMMARY RESULT", 20, currentY);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7);
+                doc.setTextColor(71, 85, 105);
+                doc.text("DEMOGRAPHICS & CHARTER KNOWLEDGE BREAKDOWN", 20, currentY + 3.5);
+                currentY += 6;
 
                 const tableAHeaders = [
-                    ['OFFICE / UNIT', 'CUST (F)', 'GENDER', '', 'CLIENT TYPE', '', '', 'CC1 (AWARENESS)', '', '', '', 'CC2 (VISIBILITY)', '', '', '', '', 'CC3 (HELPFULNESS)', '', ''],
-                    ['', '', 'M', 'F', 'CIT', 'BUS', 'GOV', '1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '2-5', '3-1', '3-2', '3-3']
+                    [
+                        { content: 'OFFICE / UNIT', rowSpan: 2, styles: { valign: 'middle', halign: 'left' } },
+                        { content: 'CUST (F)', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
+                        { content: 'GENDER', colSpan: 2, styles: { halign: 'center' } },
+                        { content: 'CLIENT TYPE', colSpan: 3, styles: { halign: 'center' } },
+                        { content: 'CC1 (AWARENESS)', colSpan: 4, styles: { halign: 'center' } },
+                        { content: 'CC2 (VISIBILITY)', colSpan: 5, styles: { halign: 'center' } },
+                        { content: 'CC3 (HELPFULNESS)', colSpan: 3, styles: { halign: 'center' } }
+                    ],
+                    [
+                        'M', 'F', 'CIT', 'BUS', 'GOV',
+                        '1-1', '1-2', '1-3', '1-4',
+                        '2-1', '2-2', '2-3', '2-4', '2-5',
+                        '3-1', '3-2', '3-3'
+                    ]
                 ];
 
                 const groupedA = {};
@@ -5429,19 +6746,54 @@ document.addEventListener('DOMContentLoaded', () => {
                     head: tableAHeaders,
                     body: bodyA,
                     theme: 'grid',
-                    headStyles: { fillColor: [34, 0, 124], textColor: [255, 255, 255], fontSize: 6, fontStyle: 'bold', halign: 'center', valign: 'middle' },
-                    styles: { fontSize: 6.5, cellPadding: 1, halign: 'center', valign: 'middle' },
-                    columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } }
+                    headStyles: {
+                        fillColor: [241, 245, 249],
+                        textColor: [15, 23, 42],
+                        fontSize: 6,
+                        fontStyle: 'bold',
+                        halign: 'center',
+                        valign: 'middle',
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.1
+                    },
+                    styles: {
+                        font: 'helvetica',
+                        fontSize: 6.5,
+                        cellPadding: 1.2,
+                        halign: 'center',
+                        valign: 'middle',
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.1,
+                        textColor: [15, 23, 42]
+                    },
+                    columnStyles: {
+                        0: { halign: 'left', fontStyle: 'bold', cellWidth: 40 }
+                    },
+                    didParseCell: (data) => {
+                        if (data.row.index === bodyA.length - 1) {
+                            data.cell.styles.fontStyle = 'bold';
+                            data.cell.styles.fillColor = [241, 245, 249];
+                        }
+                    }
                 });
 
-                currentY = doc.previousAutoTable.finalY + 8;
+                currentY = doc.lastAutoTable.finalY + 8;
 
                 // Table B: CSF Monthly Rating (8 Dimensions)
+                if (currentY > 155) {
+                    doc.addPage('a4', 'l');
+                    currentY = 16;
+                }
+
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(9);
                 doc.setTextColor(34, 0, 124);
-                doc.text('B. CSF MONTHLY RATING (SERVICE ASSESSMENT METRICS ACROSS 8 DIMENSIONS)', 20, currentY);
-                currentY += 4;
+                doc.text("B. CSF MONTHLY RATING", 20, currentY);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7);
+                doc.setTextColor(71, 85, 105);
+                doc.text("SERVICE ASSESSMENT METRICS ACROSS 8 DIMENSIONS", 20, currentY + 3.5);
+                currentY += 6;
 
                 const activeDimensions = formConfig?.dimensions?.['en'] || [
                     { id: 'responsiveness', label: '1. Responsiveness' },
@@ -5454,11 +6806,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     { id: 'outcome', label: '8. Outcome' }
                 ];
 
-                const tableBHeaders = ['OFFICES', 'CUSTOMERS (F)', ...activeDimensions.map(d => {
-                    let l = d.label;
-                    if (l.includes('.')) l = l.split('.').slice(1).join('.').trim();
-                    return l.toUpperCase();
-                }), 'MEAN SATISFACTION', 'DESCRIPTION'];
+                const tableBHeaders = [
+                    'OFFICES',
+                    'CUSTOMERS (F)',
+                    ...activeDimensions.map(d => {
+                        let l = d.label;
+                        if (l.includes('.')) l = l.split('.').slice(1).join('.').trim();
+                        return l.toUpperCase();
+                    }),
+                    'MEAN SATISFACTION',
+                    'DESCRIPTION'
+                ];
 
                 const officeStatsB = {};
                 let totalsB = { cust: 0, meanScore: 0, dims: {} };
@@ -5487,7 +6845,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     totalsB.meanScore += mScore;
                 });
 
-                const getDesc = (score) => {
+                const getDescScore = (score) => {
                     if (score >= 4.5) return 'OUTSTANDING';
                     if (score >= 3.5) return 'VERY SATISFACTORY';
                     if (score >= 2.5) return 'SATISFACTORY';
@@ -5503,7 +6861,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         g.count,
                         ...activeDimensions.map(d => g.count > 0 ? (g.dims[d.id] / g.count).toFixed(2) : "0.00"),
                         rowAvg,
-                        getDesc(parseFloat(rowAvg))
+                        getDescScore(parseFloat(rowAvg))
                     ];
                 });
 
@@ -5513,7 +6871,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     totalsB.cust,
                     ...activeDimensions.map(d => totalsB.cust > 0 ? (totalsB.dims[d.id] / totalsB.cust).toFixed(2) : "0.00"),
                     totalAvgB,
-                    getDesc(parseFloat(totalAvgB))
+                    getDescScore(parseFloat(totalAvgB))
                 ]);
 
                 doc.autoTable({
@@ -5521,26 +6879,113 @@ document.addEventListener('DOMContentLoaded', () => {
                     head: [tableBHeaders],
                     body: bodyB,
                     theme: 'grid',
-                    headStyles: { fillColor: [34, 0, 124], textColor: [255, 255, 255], fontSize: 6.5, fontStyle: 'bold', halign: 'center', valign: 'middle' },
-                    styles: { fontSize: 7, cellPadding: 1.5, halign: 'center', valign: 'middle' },
-                    columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } }
+                    headStyles: {
+                        fillColor: [241, 245, 249],
+                        textColor: [15, 23, 42],
+                        fontSize: 6,
+                        fontStyle: 'bold',
+                        halign: 'center',
+                        valign: 'middle',
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.1
+                    },
+                    styles: {
+                        font: 'helvetica',
+                        fontSize: 6.5,
+                        cellPadding: 1.2,
+                        halign: 'center',
+                        valign: 'middle',
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.1,
+                        textColor: [15, 23, 42]
+                    },
+                    columnStyles: {
+                        0: { halign: 'left', fontStyle: 'bold', cellWidth: 38 }
+                    },
+                    didParseCell: (data) => {
+                        if (data.row.index === bodyB.length - 1) {
+                            data.cell.styles.fontStyle = 'bold';
+                            data.cell.styles.fillColor = [241, 245, 249];
+                        }
+                    }
                 });
 
-                currentY = doc.previousAutoTable.finalY + 10;
-            }
+                currentY = doc.lastAutoTable.finalY + 8;
 
-            if (complaints.length > 0) {
+                // Table C: CSF Commendations and Suggestions
+                if (currentY > 155) {
+                    doc.addPage('a4', 'l');
+                    currentY = 16;
+                }
+
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(9);
-                doc.setTextColor(180, 20, 20);
+                doc.setTextColor(34, 0, 124);
+                doc.text("C. CSF COMMENDATIONS AND SUGGESTIONS", 20, currentY);
+                currentY += 5;
+
+                const comms = feedbacks.filter(f => (f.suggestions && f.suggestions.trim()) || (f.commendations && f.commendations.trim()));
+                const tableCHeaders = ['OFFICES', 'CLIENT TYPE', 'COMMENDATIONS', 'SUGGESTIONS'];
+                const bodyC = comms.length > 0 ? comms.map(c => [
+                    c.office_visited || 'N/A',
+                    c.client_type || 'N/A',
+                    c.commendations || 'None',
+                    c.suggestions || 'None'
+                ]) : [['All Offices', 'N/A', 'No commendations or suggestions submitted.', '']];
+
+                doc.autoTable({
+                    startY: currentY,
+                    head: [tableCHeaders],
+                    body: bodyC,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [241, 245, 249],
+                        textColor: [15, 23, 42],
+                        fontSize: 6.5,
+                        fontStyle: 'bold',
+                        halign: 'left',
+                        valign: 'middle',
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.1
+                    },
+                    styles: {
+                        font: 'helvetica',
+                        fontSize: 6.5,
+                        cellPadding: 1.5,
+                        valign: 'top',
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.1,
+                        textColor: [15, 23, 42]
+                    },
+                    columnStyles: {
+                        0: { fontStyle: 'bold', cellWidth: 40 },
+                        1: { cellWidth: 25 },
+                        2: { cellWidth: 96 },
+                        3: { cellWidth: 96 }
+                    }
+                });
+
+                currentY = doc.lastAutoTable.finalY + 8;
+            }
+
+            // Formal Complaints Log (if any)
+            if (complaints.length > 0) {
+                if (currentY > 155) {
+                    doc.addPage('a4', 'l');
+                    currentY = 16;
+                }
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9);
+                doc.setTextColor(153, 27, 27);
                 doc.text(`FORMAL COMPLAINTS LOG (${complaints.length})`, 20, currentY);
-                currentY += 4;
+                currentY += 5;
 
                 const compHeaders = ['COMPLAINANT', 'LOCATION', 'NARRATIVE / DETAILS', 'FILING DATE'];
                 const compBody = complaints.map(c => [
                     c.name || 'Anonymous',
                     c.place_of_incident || 'N/A',
-                    (c.details_of_complaint || c.narrative_report || 'N/A').substring(0, 60),
+                    c.details_of_complaint || c.narrative_report || 'N/A',
                     c.created_at ? new Date(c.created_at).toLocaleDateString('en-US') : 'N/A'
                 ]);
 
@@ -5549,42 +6994,104 @@ document.addEventListener('DOMContentLoaded', () => {
                     head: [compHeaders],
                     body: compBody,
                     theme: 'grid',
-                    headStyles: { fillColor: [180, 20, 20], textColor: [255, 255, 255], fontSize: 7, fontStyle: 'bold', halign: 'center' },
-                    styles: { fontSize: 7.5, cellPadding: 2, valign: 'middle' }
+                    headStyles: {
+                        fillColor: [254, 226, 226],
+                        textColor: [153, 27, 27],
+                        fontSize: 6.5,
+                        fontStyle: 'bold',
+                        halign: 'left',
+                        valign: 'middle',
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.1
+                    },
+                    styles: {
+                        font: 'helvetica',
+                        fontSize: 6.5,
+                        cellPadding: 1.5,
+                        valign: 'top',
+                        lineColor: [0, 0, 0],
+                        lineWidth: 0.1,
+                        textColor: [15, 23, 42]
+                    },
+                    columnStyles: {
+                        0: { fontStyle: 'bold', cellWidth: 40 },
+                        1: { cellWidth: 40 },
+                        2: { cellWidth: 142 },
+                        3: { halign: 'center', cellWidth: 35 }
+                    }
                 });
 
-                currentY = doc.previousAutoTable.finalY + 10;
+                currentY = doc.lastAutoTable.finalY + 8;
             }
 
-            // Institutional Signatures Footer
-            const finalY = currentY + 4 > 170 ? 170 : currentY + 4;
+            // Institutional Signatures Block (CSAT Chairperson, Campus QA Director, Campus Director)
+            if (currentY + 28 > 192) {
+                doc.addPage('a4', 'l');
+                currentY = 25;
+            } else {
+                currentY = Math.max(currentY + 4, 155);
+                if (currentY > 165) {
+                    currentY = 165;
+                }
+            }
+
+            const sigY = currentY;
+
+            // Column 1: Prepared by
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(15, 23, 42);
-
-            doc.text('Prepared by:', 20, finalY);
-            doc.line(20, finalY + 8, 95, finalY + 8);
+            doc.text('Prepared by:', 20, sigY);
+            doc.line(20, sigY + 12, 95, sigY + 12);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(7.5);
-            doc.text('CSAT CHAIRPERSON', 20, finalY + 11);
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7);
-            doc.text('Chairperson, Customer Satisfaction Assessment Team', 20, finalY + 14);
-
-            doc.text('Verified by:', 202, finalY);
-            doc.line(202, finalY + 8, 277, finalY + 8);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(7.5);
-            doc.text('CAMPUS QA DIRECTOR', 202, finalY + 11);
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7);
-            doc.text('Campus Quality Assurance Director', 202, finalY + 14);
-
+            doc.text('CSAT CHAIRPERSON', 20, sigY + 16);
+            doc.setFont('helvetica', 'italic');
             doc.setFontSize(6.5);
-            doc.setTextColor(100, 116, 139);
-            doc.line(20, 198, 277, 198);
-            doc.text('Document Code: F-AQA-CSF-001 | Revision: 03 | Effectivity: September 2025', 20, 202);
-            doc.text('Bohol Island State University • Quality Management System', 277, 202, { align: 'right' });
+            doc.setTextColor(71, 85, 105);
+            doc.text('Chairperson, Customer Satisfaction Assessment Team', 20, sigY + 20);
+
+            // Column 2: Verified by
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(15, 23, 42);
+            doc.text('Verified by:', 111, sigY);
+            doc.line(111, sigY + 12, 186, sigY + 12);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.text('CAMPUS QA DIRECTOR', 111, sigY + 16);
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(6.5);
+            doc.setTextColor(71, 85, 105);
+            doc.text('Campus Quality Assurance Director', 111, sigY + 20);
+
+            // Column 3: Approved by
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(15, 23, 42);
+            doc.text('Approved by:', 202, sigY);
+            doc.line(202, sigY + 12, 277, sigY + 12);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.text('CAMPUS DIRECTOR', 202, sigY + 16);
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(6.5);
+            doc.setTextColor(71, 85, 105);
+            doc.text('Campus Director, BISU Calape', 202, sigY + 20);
+
+            // Document Code Footer and Pagination on ALL pages
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setDrawColor(51, 65, 85);
+                doc.setLineWidth(0.3);
+                doc.line(20, 196, 277, 196);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(6.5);
+                doc.setTextColor(100, 116, 139);
+                doc.text('Document Code: F-AQA-CSF-001 | Revision: 03 | Effectivity: September 2025', 20, 201);
+                doc.text(`Page ${i} of ${totalPages} | Bohol Island State University • Quality Management System`, 277, 201, { align: 'right' });
+            }
 
             const dataUri = doc.output('datauristring');
             const dateStr = new Date().toISOString().split('T')[0];
@@ -5778,7 +7285,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function exportToDOCX() {
         const feedbacks = lastFilteredFeedbacks || [];
         const complaints = lastFilteredComplaints || [];
-        generateDOCXForDataset(feedbacks, complaints, 'Customer Satisfaction & Complaint Feedback Report', 'BISU_Feedback_Report');
+        if (feedbacks.length === 0 && complaints.length === 0) {
+            showToast('No filtered data available to export.', 'error');
+            return;
+        }
+        const isOffice = currentUserRole === 'office' && !!currentOfficeScope;
+        const reportTitle = isOffice 
+            ? `${currentOfficeScope.toUpperCase()} CUSTOMER SATISFACTION & COMPLAINT REPORT`
+            : 'Customer Satisfaction & Complaint Feedback Report';
+        const filePrefix = isOffice 
+            ? `BISU_${currentOfficeScope.replace(/[^a-zA-Z0-9]/g, '_')}_Feedback_Report`
+            : 'BISU_Feedback_Report';
+
+        generateDOCXForDataset(feedbacks, complaints, reportTitle, filePrefix);
     }
 
     if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
@@ -7289,20 +8808,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Filter selectors
+    const filterDateInput = document.getElementById('filter-date-input');
     const filterMonthSelect = document.getElementById('filter-month-select');
     const filterYearSelect = document.getElementById('filter-year-select');
+    const filterTimeSelect = document.getElementById('filter-time-select');
     const clearFiltersBtn = document.getElementById('clear-filters-btn');
 
+    if (filterDateInput) {
+        filterDateInput.addEventListener('change', applyFiltersAndRender);
+        filterDateInput.addEventListener('input', applyFiltersAndRender);
+    }
     if (filterMonthSelect) {
         filterMonthSelect.addEventListener('change', applyFiltersAndRender);
     }
     if (filterYearSelect) {
         filterYearSelect.addEventListener('change', applyFiltersAndRender);
     }
+    if (filterTimeSelect) {
+        filterTimeSelect.addEventListener('change', applyFiltersAndRender);
+    }
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', () => {
+            if (filterDateInput) filterDateInput.value = '';
             if (filterMonthSelect) filterMonthSelect.value = 'all';
             if (filterYearSelect) filterYearSelect.value = 'all';
+            if (filterTimeSelect) filterTimeSelect.value = 'all';
             applyFiltersAndRender();
         });
     }
@@ -7350,6 +8880,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     sidebarToggleIcon.classList.add('fa-bars');
                 }
             }
+        });
+
+        // Close mobile sidebar automatically when any navigation/action button inside it is tapped
+        sidebarContent.querySelectorAll('button, a, select').forEach(interactiveEl => {
+            interactiveEl.addEventListener('click', () => {
+                if (window.innerWidth < 1280 && !interactiveEl.closest('select')) {
+                    sidebarContent.classList.add('hidden');
+                    sidebarContent.classList.remove('flex');
+                    if (sidebarToggleIcon) {
+                        sidebarToggleIcon.classList.remove('fa-xmark');
+                        sidebarToggleIcon.classList.add('fa-bars');
+                    }
+                }
+            });
         });
     }
 
@@ -7559,14 +9103,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (qrOfficeSelect) {
-                const currentVal = qrOfficeSelect.value;
-                qrOfficeSelect.innerHTML = '<option value="">All Offices (General Feedback)</option>';
-                if (typeof formConfig !== 'undefined' && Array.isArray(formConfig.offices)) {
-                    formConfig.offices.forEach(off => {
-                        qrOfficeSelect.innerHTML += `<option value="${off}">${off}</option>`;
-                    });
+                const isOffice = currentUserRole === 'office' && !!currentOfficeScope;
+                if (isOffice) {
+                    qrOfficeSelect.innerHTML = `<option value="${escapeHtml(currentOfficeScope)}">${escapeHtml(currentOfficeScope)}</option>`;
+                    qrOfficeSelect.value = currentOfficeScope;
+                    qrOfficeSelect.disabled = true;
+                } else {
+                    const currentVal = qrOfficeSelect.value;
+                    qrOfficeSelect.disabled = false;
+                    qrOfficeSelect.innerHTML = '<option value="">All Offices (General Feedback)</option>';
+                    if (typeof formConfig !== 'undefined' && Array.isArray(formConfig.offices)) {
+                        formConfig.offices.forEach(off => {
+                            qrOfficeSelect.innerHTML += `<option value="${off}">${off}</option>`;
+                        });
+                    }
+                    qrOfficeSelect.value = currentVal;
                 }
-                qrOfficeSelect.value = currentVal;
             }
 
             await loadSavedQrsFromDatabase();

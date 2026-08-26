@@ -42,24 +42,44 @@ button:active {
 }
 
 /* Admin layout: sidebar pinned left; only dashboard content scrolls */
+html.swal2-shown,
+html.swal2-height-auto,
+body.swal2-shown,
+body.swal2-height-auto {
+    height: 100% !important;
+    min-height: 100% !important;
+}
+
 @media (min-width: 1280px) {
-    body.admin-layout {
-        height: 100dvh;
-        max-height: 100dvh;
-        overflow: hidden;
+    body.admin-layout,
+    body.admin-layout.swal2-shown,
+    body.admin-layout.swal2-height-auto,
+    html.swal2-shown body.admin-layout {
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        min-height: 100dvh !important;
+        overflow: hidden !important;
     }
 
-    body.admin-layout > main {
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
+    body.admin-layout > main,
+    body.admin-layout.swal2-shown > main,
+    body.admin-layout.swal2-height-auto > main {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
     }
 
-    body.admin-layout #view-admin:not(.section-hidden) {
-        flex: 1 1 auto;
-        min-height: 0;
+    body.admin-layout #view-admin:not(.section-hidden),
+    body.admin-layout.swal2-shown #view-admin:not(.section-hidden),
+    body.admin-layout.swal2-height-auto #view-admin:not(.section-hidden) {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        max-height: 100% !important;
     }
 }
 
@@ -77,7 +97,9 @@ body.admin-layout > footer {
 
     body.admin-layout #admin-sidebar {
         border-radius: 0;
-        align-self: stretch;
+        align-self: stretch !important;
+        height: 100% !important;
+        min-height: 100% !important;
     }
 }
 
@@ -128,12 +150,42 @@ body.admin-layout > footer {
     border: 1px solid rgba(255,255,255,0.15);
 }
 
-/* Responsive Utilities */
+/* Responsive Utilities & Mobile Optimization */
 @media (max-width: 640px) {
     .animate-pop-in {
         animation-duration: 0.3s;
     }
     .animate-slide-up {
         animation-duration: 0.35s;
+    }
+
+    /* Mobile form input ergonomics - prevent unwanted auto-zooming on focus */
+    select, input[type="text"], input[type="email"], input[type="password"], input[type="date"], input[type="time"], textarea {
+        font-size: 16px !important;
+        touch-action: manipulation;
+    }
+
+    /* Safe touch targets on mobile */
+    button, a, select, input[type="checkbox"], input[type="radio"] {
+        touch-action: manipulation;
+    }
+
+    /* Momentum scrolling for horizontally overflowing data tables */
+    .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Toast container safe positioning above bottom nav / virtual home indicators */
+    #toast-container {
+        left: 1rem !important;
+        right: 1rem !important;
+        bottom: 1.25rem !important;
+        bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)) !important;
+        align-items: center;
+    }
+
+    #toast-container > div {
+        width: 100%;
+        max-width: 24rem;
     }
 }

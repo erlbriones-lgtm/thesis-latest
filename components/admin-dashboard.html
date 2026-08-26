@@ -2,32 +2,37 @@
 <section id="view-admin" class="section-hidden animate-slide-up w-full xl:h-full xl:min-h-0 flex flex-col xl:flex-row gap-4 xl:gap-0 xl:overflow-hidden">
 
     <!-- Sidebar: Clean, comfortable dark nav -->
-    <aside id="admin-sidebar" class="w-full xl:w-72 xl:h-full xl:overflow-y-auto custom-scrollbar rounded-2xl xl:rounded-none p-6 flex flex-col shrink-0 print:hidden shadow-xs z-40 bg-[#120042] border-b xl:border-b-0 xl:border-r border-white/10">
+    <aside id="admin-sidebar" class="w-full xl:w-72 xl:h-full xl:min-h-full self-stretch xl:overflow-y-auto custom-scrollbar rounded-2xl xl:rounded-none p-6 flex flex-col shrink-0 print:hidden shadow-xs z-40 bg-[#120042] border-b xl:border-b-0 xl:border-r border-white/10">
         <div class="flex items-center justify-between border-b border-white/10 pb-5 mb-6 shrink-0">
-            <div class="flex items-center gap-3">
-                <div>
-                    <h2 class="text-lg font-black text-white leading-tight tracking-tight">Admin Console</h2>
+            <div class="flex flex-col gap-1 w-full min-w-0 pr-2">
+                <div class="flex items-center gap-2">
+                    <h2 id="admin-sidebar-title" class="text-lg font-black text-white leading-tight tracking-tight">Admin Console</h2>
+                </div>
+                <!-- Dedicated Office Portal Badge in Sidebar -->
+                <div id="sidebar-office-badge" class="hidden mt-1 bg-bisu-gold/15 text-bisu-gold border border-bisu-gold/30 rounded-xl px-2.5 py-1 text-[11px] font-bold items-center gap-1.5 truncate">
+                    <i class="fa-solid fa-building-circle-check text-xs shrink-0"></i>
+                    <span id="sidebar-office-name" class="truncate">Office Portal</span>
                 </div>
             </div>
-            <button id="sidebar-toggle-btn" class="xl:hidden w-11 h-11 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors focus:ring-2 focus:ring-bisu-gold/50" title="Toggle Admin Menu">
+            <button id="sidebar-toggle-btn" class="xl:hidden w-11 h-11 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors focus:ring-2 focus:ring-bisu-gold/50 shrink-0" title="Toggle Admin Menu">
                 <i class="fa-solid fa-bars text-lg" id="sidebar-toggle-icon"></i>
             </button>
         </div>
 
         <div id="sidebar-content" class="hidden xl:flex flex-col flex-grow gap-6 animate-fade-in min-h-0">
-            <div>
-                <p class="text-xs font-extrabold text-blue-300/70 uppercase tracking-widest mb-2.5 px-2">Management</p>
+            <div id="sidebar-management-section" class="admin-only-feature">
+                <p id="sidebar-management-heading" class="text-xs font-extrabold text-blue-300/70 uppercase tracking-widest mb-2.5 px-2">Management</p>
                 <nav class="flex flex-col gap-1">
-                    <button id="manage-qrcode-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-bold text-bisu-gold hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
-                        <i class="fa-solid fa-qrcode w-6 text-center mr-2 text-bisu-gold text-base group-hover:scale-110 transition-transform"></i> QR Code Generator
+                    <button id="manage-qrcode-btn" class="admin-only-feature flex items-center text-left w-full px-3.5 py-2.5 text-sm font-bold text-bisu-gold hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
+                        <i class="fa-solid fa-qrcode w-6 text-center mr-2 text-bisu-gold text-base group-hover:scale-110 transition-transform"></i> <span id="sidebar-qr-label">QR Code Generator</span>
                     </button>
-                    <button id="admin-settings-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
+                    <button id="admin-settings-btn" class="admin-only-feature flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
                         <i class="fa-solid fa-sliders w-6 text-center mr-2 text-blue-200/80 group-hover:text-white transition-colors text-base group-hover:rotate-45 transition-transform"></i> Form Settings
                     </button>
-                    <button id="manage-accounts-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
+                    <button id="manage-accounts-btn" class="admin-only-feature flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
                         <i class="fa-solid fa-users-gear w-6 text-center mr-2 text-blue-200/80 group-hover:text-white transition-colors text-base group-hover:scale-110 transition-transform"></i> Office Accounts
                     </button>
-                    <button id="manage-recipients-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
+                    <button id="manage-recipients-btn" class="admin-only-feature flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
                         <i class="fa-solid fa-envelope-open-text w-6 text-center mr-2 text-blue-200/80 group-hover:text-white transition-colors text-base group-hover:-translate-y-0.5 transition-transform"></i> Email Recipients
                     </button>
                 </nav>
@@ -37,7 +42,7 @@
                 <p class="text-xs font-extrabold text-blue-300/70 uppercase tracking-widest mb-2.5 px-2">Exports & Printing</p>
                 <nav class="flex flex-col gap-1">
                     <button onclick="printAll()" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
-                        <i class="fa-solid fa-print w-6 text-center mr-2 text-blue-200/80 group-hover:text-white transition-colors text-base"></i> Print Full Dashboard
+                        <i class="fa-solid fa-print w-6 text-center mr-2 text-blue-200/80 group-hover:text-white transition-colors text-base"></i> <span id="sidebar-print-label">Print Full Dashboard</span>
                     </button>
                     <button id="export-pdf-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
                         <i class="fa-solid fa-file-pdf w-6 text-center mr-2 text-red-400 group-hover:text-red-300 transition-colors text-base"></i> Export PDF Report
@@ -48,7 +53,7 @@
                 </nav>
             </div>
 
-            <div>
+            <div id="sidebar-maintenance-section" class="admin-only-feature">
                 <p class="text-xs font-extrabold text-blue-300/70 uppercase tracking-widest mb-2.5 px-2">Maintenance</p>
                 <nav class="flex flex-col gap-1">
                     <button id="view-archived-btn" class="flex items-center text-left w-full px-3.5 py-2.5 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all click-press active:scale-95 group cursor-pointer">
@@ -62,13 +67,13 @@
             </div>
 
             <button id="logout-admin-btn" class="flex items-center text-left w-full px-3.5 py-3 mt-auto shrink-0 text-sm font-bold text-red-200 hover:text-white hover:bg-red-500/20 rounded-xl transition-all border-t border-white/10 pt-5 cursor-pointer">
-                <i class="fa-solid fa-right-from-bracket w-6 text-center mr-2 text-base"></i> Close Admin Session
+                <i class="fa-solid fa-right-from-bracket w-6 text-center mr-2 text-base"></i> <span id="sidebar-logout-label">Close Admin Session</span>
             </button>
         </div>
     </aside>
 
     <!-- Main Dashboard Content (Spacious, easy to read, high contrast) -->
-    <div id="admin-dashboard-scroll" class="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden custom-scrollbar bg-slate-50/50 p-6 md:p-8 rounded-2xl xl:rounded-none xl:rounded-tl-2xl shadow-xs border border-slate-200/80 print:bg-white print:border-none print:shadow-none print:p-0 print:overflow-visible w-full">
+    <div id="admin-dashboard-scroll" class="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden custom-scrollbar bg-slate-50/50 p-3.5 sm:p-5 md:p-8 rounded-2xl xl:rounded-none xl:rounded-tl-2xl shadow-xs border border-slate-200/80 print:bg-white print:border-none print:shadow-none print:p-0 print:overflow-visible w-full">
         
         <!-- Print Letterhead (Visible ONLY during print) -->
         <div id="print-header" class="hidden print:flex flex-col items-center justify-center mb-6 pb-4 w-full pt-2 font-sans">
@@ -98,11 +103,15 @@
         <!-- Clean Header Bar -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200/80 print:hidden">
             <div>
-                <div class="flex items-center gap-2.5">
-                    <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Customer Satisfaction Analytics</h2>
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <h2 id="admin-main-title" class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Customer Satisfaction Analytics</h2>
+                    <span id="admin-office-scope-badge" class="hidden bg-blue-100 text-bisu-blue border border-blue-200 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider items-center gap-1.5 shadow-2xs">
+                        <i class="fa-solid fa-building-user text-xs"></i>
+                        <span id="admin-office-scope-text">Library</span>
+                    </span>
                     <span id="db-connection-badge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">LIVE</span>
                 </div>
-                <p class="text-sm text-slate-500 font-medium mt-1">Real-time customer satisfaction metrics and service performance logs. <span id="db-connection-detail" class="text-slate-400"></span></p>
+                <p id="admin-main-subtitle" class="text-sm text-slate-500 font-medium mt-1">Real-time customer satisfaction metrics and service performance logs. <span id="db-connection-detail" class="text-slate-400"></span></p>
             </div>
 
             <div class="flex items-center gap-2 shrink-0">
@@ -120,8 +129,13 @@
                     <span>Filter:</span>
                 </div>
                 
+                <!-- Specific Date / Day Filter -->
+                <div class="relative flex items-center">
+                    <input type="date" id="filter-date-input" title="Filter by specific day/date" class="border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold focus:border-bisu-blue focus:ring-1 focus:ring-bisu-blue bg-slate-50/50 text-slate-800 cursor-pointer">
+                </div>
+
                 <!-- Month Filter -->
-                <div class="relative w-40">
+                <div class="relative w-36">
                     <select id="filter-month-select" class="w-full border border-slate-300 rounded-xl pl-3.5 pr-8 py-2 text-xs font-bold focus:border-bisu-blue focus:ring-1 focus:ring-bisu-blue appearance-none bg-slate-50/50 text-slate-800 cursor-pointer">
                         <option value="all">All Months</option>
                         <option value="01">January</option>
@@ -141,9 +155,19 @@
                 </div>
                 
                 <!-- Year Filter -->
-                <div class="relative w-32">
+                <div class="relative w-28">
                     <select id="filter-year-select" class="w-full border border-slate-300 rounded-xl pl-3.5 pr-8 py-2 text-xs font-bold focus:border-bisu-blue focus:ring-1 focus:ring-bisu-blue appearance-none bg-slate-50/50 text-slate-800 cursor-pointer">
                         <option value="all">All Years</option>
+                    </select>
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs"><i class="fa-solid fa-chevron-down"></i></div>
+                </div>
+
+                <!-- Time of Day Filter -->
+                <div class="relative w-32">
+                    <select id="filter-time-select" class="w-full border border-slate-300 rounded-xl pl-3.5 pr-8 py-2 text-xs font-bold focus:border-bisu-blue focus:ring-1 focus:ring-bisu-blue appearance-none bg-slate-50/50 text-slate-800 cursor-pointer">
+                        <option value="all">All Times</option>
+                        <option value="am">Morning (AM)</option>
+                        <option value="pm">Afternoon (PM)</option>
                     </select>
                     <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs"><i class="fa-solid fa-chevron-down"></i></div>
                 </div>
@@ -223,7 +247,7 @@
                     <button onclick="generateOfficeReportCard()" class="px-4 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-black transition text-xs font-bold shadow-2xs flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer">
                         <i class="fa-solid fa-print text-xs"></i> Print MRC
                     </button>
-                    <button onclick="sendReportToService('MRC')" class="px-4 py-2.5 bg-bisu-gold text-bisu-blue rounded-xl hover:bg-yellow-500 transition text-xs font-bold shadow-2xs flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer">
+                    <button onclick="sendReportToService('MRC')" class="admin-only-feature px-4 py-2.5 bg-bisu-gold text-bisu-blue rounded-xl hover:bg-yellow-500 transition text-xs font-bold shadow-2xs flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer">
                         <i class="fa-solid fa-paper-plane text-xs"></i> Send to Q.A.
                     </button>
                 </div>
@@ -250,7 +274,7 @@
                 </div>
                 <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
                     <button onclick="printSpecificTable('table-a')" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-print mr-1.5 text-slate-400"></i> Print</button>
-                    <button onclick="sendReportToService('Table A')" class="px-3 py-1.5 bg-bisu-blue text-white hover:bg-bisu-blue-dark rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-paper-plane mr-1.5 text-xs"></i> Forward</button>
+                    <button onclick="sendReportToService('Table A')" class="admin-only-feature px-3 py-1.5 bg-bisu-blue text-white hover:bg-bisu-blue-dark rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-paper-plane mr-1.5 text-xs"></i> Forward</button>
                 </div>
             </div>
             
@@ -316,7 +340,7 @@
                     </div>
                     <div class="flex items-center space-x-2 shrink-0">
                         <button onclick="printSpecificTable('table-b')" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-print mr-1.5 text-slate-400"></i> Print</button>
-                        <button onclick="sendReportToService('Table B')" class="px-3 py-1.5 bg-bisu-gold text-bisu-blue hover:bg-yellow-500 rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-paper-plane mr-1.5 text-xs"></i> Forward</button>
+                        <button onclick="sendReportToService('Table B')" class="admin-only-feature px-3 py-1.5 bg-bisu-gold text-bisu-blue hover:bg-yellow-500 rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-paper-plane mr-1.5 text-xs"></i> Forward</button>
                     </div>
                 </div>
             </div>
@@ -365,7 +389,7 @@
                 </div>
                 <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
                     <button onclick="printSpecificTable('table-c')" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-print mr-1.5 text-slate-400"></i> Print</button>
-                    <button onclick="sendReportToService('Table C')" class="px-3 py-1.5 bg-bisu-blue text-white hover:bg-bisu-blue-dark rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-paper-plane mr-1.5 text-xs"></i> Forward</button>
+                    <button onclick="sendReportToService('Table C')" class="admin-only-feature px-3 py-1.5 bg-bisu-blue text-white hover:bg-bisu-blue-dark rounded-xl text-xs font-bold transition shadow-2xs flex items-center print:hidden cursor-pointer"><i class="fa-solid fa-paper-plane mr-1.5 text-xs"></i> Forward</button>
                 </div>
             </div>
 

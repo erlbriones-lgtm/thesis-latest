@@ -4340,6 +4340,8 @@ BISU Calape Campus Portal: https://bisu.edu.ph
     }
 
     window.addEventListener('online', syncOfflineData);
+    // Also attempt sync on initial page load if internet is active
+    setTimeout(syncOfflineData, 1500);
 
     // === Admin Logic ===
     // === Admin Settings Modal Logic ===

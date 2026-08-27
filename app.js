@@ -1774,9 +1774,66 @@ document.addEventListener('DOMContentLoaded', () => {
         return error.code === '42P01' || msg.includes('relation') && msg.includes('does not exist');
     }
 
+    function prepareFeedbackPayload(row) {
+        if (!row || typeof row !== 'object') return row;
+        const copy = { ...row };
+        const ratings = { ...(copy.ratings || {}) };
+
+        // Ensure non-schema root fields are preserved in ratings JSONB and removed from top-level object
+        if (copy.client_name !== undefined) {
+            if (ratings.client_name === undefined) ratings.client_name = copy.client_name;
+            delete copy.client_name;
+        }
+        if (copy.client_email !== undefined) {
+            if (ratings.client_email === undefined) ratings.client_email = copy.client_email;
+            delete copy.client_email;
+        }
+        if (copy.date_visited !== undefined) {
+            if (ratings.date_visited === undefined) ratings.date_visited = copy.date_visited;
+            delete copy.date_visited;
+        }
+        if (copy.time_visited !== undefined) {
+            if (ratings.time_visited === undefined) ratings.time_visited = copy.time_visited;
+            delete copy.time_visited;
+        }
+
+        copy.ratings = ratings;
+        return copy;
+    }
+
     async function insertEvaluations(client, rows) {
-        // Direct insert into the feedbacks table
-        return await client.from(FEEDBACK_TABLE).insert(rows);
+        if (!client || !rows || rows.length === 0) return { data: [], error: null };
+        const preparedRows = rows.map(r => prepareFeedbackPayload(r));
+        let result = await client.from(FEEDBACK_TABLE).insert(preparedRows);
+
+        if (result && result.error) {
+            const errMsg = (result.error.message || '').toLowerCase();
+            if (result.error.code === '42703' || errMsg.includes('column') || errMsg.includes('schema cache')) {
+                console.warn('Database schema mismatch on feedback insert. Retrying with legacy fallback:', result.error.message);
+                const colMatch = errMsg.match(/column\s+'?([a-zA-Z0-9_]+)'?/i) || errMsg.match(/'([a-zA-Z0-9_]+)'\s+column/i);
+                const badCol = colMatch ? colMatch[1] : null;
+
+                const fallbackRows = preparedRows.map(item => {
+                    const copy = { ...item };
+                    copy.ratings = { ...(item.ratings || {}) };
+                    if (copy.served_by !== undefined) {
+                        if (copy.ratings.served_by === undefined) copy.ratings.served_by = copy.served_by;
+                        delete copy.served_by;
+                    }
+                    if (copy.region_of_residence !== undefined) {
+                        if (copy.ratings.region_of_residence === undefined) copy.ratings.region_of_residence = copy.region_of_residence;
+                        delete copy.region_of_residence;
+                    }
+                    if (badCol && copy[badCol] !== undefined) {
+                        if (copy.ratings[badCol] === undefined) copy.ratings[badCol] = copy[badCol];
+                        delete copy[badCol];
+                    }
+                    return copy;
+                });
+                result = await client.from(FEEDBACK_TABLE).insert(fallbackRows);
+            }
+        }
+        return result;
     }
 
     async function selectEvaluations(client) {
@@ -3360,10 +3417,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const officeName = payload.office_visited || document.getElementById('office-visited')?.value || 'General Office';
         const serviceAvailed = payload.service_availed || 'Unspecified';
         const clientType = payload.client_type || 'Client';
-        const clientName = payload.client_name && payload.client_name !== 'Anonymous' ? payload.client_name : 'Anonymous';
-        const recipientDisplay = (targetEmail || payload.client_email || '').trim() || 'Client Copy';
-        const servedBy = payload.served_by || 'N/A';
-        const region = payload.region_of_residence || 'N/A';
+        const clientName = (payload.client_name && payload.client_name !== 'Anonymous') 
+            ? payload.client_name 
+            : ((payload.ratings && payload.ratings.client_name && payload.ratings.client_name !== 'Anonymous') ? payload.ratings.client_name : 'Anonymous');
+        const clientEmail = (payload.client_email || (payload.ratings && payload.ratings.client_email) || targetEmail || '').trim();
+        const recipientDisplay = (targetEmail || clientEmail || '').trim() || 'Client Copy';
+        const servedBy = payload.served_by || (payload.ratings && payload.ratings.served_by) || 'N/A';
+        const region = payload.region_of_residence || (payload.ratings && payload.ratings.region_of_residence) || 'N/A';
 
         // CC mapping
         const cc1Map = {
@@ -3458,7 +3518,7 @@ BISU Calape Campus Portal: https://bisu.edu.ph
 
     function openFeedbackEmailReceipt(payload, recipientEmail, lang = 'en', mode = 'auto') {
         const OFFICIAL_FEEDBACK_EMAIL = 'fredianmherl.masas@bisu.edu.ph';
-        const trimmedEmail = (recipientEmail || payload.client_email || '').trim();
+        const trimmedEmail = (recipientEmail || payload.client_email || (payload.ratings && payload.ratings.client_email) || '').trim();
         const receiptBody = generateFeedbackReceiptText(payload, lang, trimmedEmail);
         const officeName = payload.office_visited || 'BISU Calape';
         const subject = `[BISU Calape CSFS] Feedback Receipt - ${officeName}`;
@@ -3504,7 +3564,9 @@ BISU Calape Campus Portal: https://bisu.edu.ph
         const officeName = payload.office_visited || document.getElementById('office-visited')?.value || '';
         const serviceAvailed = payload.service_availed || '';
         const clientType = payload.client_type || '';
-        const clientName = payload.client_name && payload.client_name !== 'Anonymous' ? payload.client_name : '';
+        const clientName = (payload.client_name && payload.client_name !== 'Anonymous') 
+            ? payload.client_name 
+            : ((payload.ratings && payload.ratings.client_name && payload.ratings.client_name !== 'Anonymous') ? payload.ratings.client_name : '');
         const dateStr = payload.created_at 
             ? new Date(payload.created_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
             : '';
@@ -3513,7 +3575,7 @@ BISU Calape Campus Portal: https://bisu.edu.ph
         try {
             savedClientEmail = localStorage.getItem('bisu_client_email') || '';
         } catch(e) {}
-        const defaultEmail = (payload.client_email || savedClientEmail || '').trim();
+        const defaultEmail = (payload.client_email || (payload.ratings && payload.ratings.client_email) || savedClientEmail || '').trim();
 
         const offlineNotice = isOffline ? `
             <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-bold flex items-center justify-center gap-2">
@@ -3877,24 +3939,7 @@ BISU Calape Campus Portal: https://bisu.edu.ph
         try {
             const client = await getSupabaseClient();
             if (navigator.onLine && client) {
-                let result = await insertEvaluations(client, [payload]);
-                if (result && result.error) {
-                    const errMsg = (result.error.message || '').toLowerCase();
-                    if (result.error.code === '42703' || errMsg.includes('served_by') || errMsg.includes('region_of_residence') || errMsg.includes('client_name') || errMsg.includes('client_email') || errMsg.includes('column')) {
-                        console.warn('Database is missing modern columns. Retrying with values embedded in ratings.');
-                        const fallbackPayload = { ...payload };
-                        fallbackPayload.ratings = { ...payload.ratings };
-                        if (payload.client_name) fallbackPayload.ratings.client_name = payload.client_name;
-                        if (payload.client_email) fallbackPayload.ratings.client_email = payload.client_email;
-                        if (payload.served_by) fallbackPayload.ratings.served_by = payload.served_by;
-                        if (payload.region_of_residence) fallbackPayload.ratings.region_of_residence = payload.region_of_residence;
-                        delete fallbackPayload.client_name;
-                        delete fallbackPayload.client_email;
-                        delete fallbackPayload.served_by;
-                        delete fallbackPayload.region_of_residence;
-                        result = await insertEvaluations(client, [fallbackPayload]);
-                    }
-                }
+                const result = await insertEvaluations(client, [payload]);
                 if (result && result.error) throw result.error;
                 showFeedbackThankYou(payload, false);
             } else {
@@ -4264,26 +4309,13 @@ BISU Calape Campus Portal: https://bisu.edu.ph
 
         const pFeedbacks = JSON.parse(localStorage.getItem('pendingFeedbacks')) || [];
         if (pFeedbacks.length > 0) {
-            let result = await insertEvaluations(client, pFeedbacks);
-            if (result && result.error) {
-                const errMsg = (result.error.message || '').toLowerCase();
-                if (result.error.code === '42703' || errMsg.includes('served_by') || errMsg.includes('region_of_residence') || errMsg.includes('column')) {
-                    console.warn('Database is missing modern columns during sync. Converting items.');
-                    const converted = pFeedbacks.map(item => {
-                        const copy = { ...item };
-                        copy.ratings = { ...item.ratings };
-                        if (item.served_by) copy.ratings.served_by = item.served_by;
-                        if (item.region_of_residence) copy.ratings.region_of_residence = item.region_of_residence;
-                        delete copy.served_by;
-                        delete copy.region_of_residence;
-                        return copy;
-                    });
-                    result = await insertEvaluations(client, converted);
-                }
-            }
+            const result = await insertEvaluations(client, pFeedbacks);
             if (result && !result.error) {
                 localStorage.removeItem('pendingFeedbacks');
                 showToast('Offline feedbacks synced!', 'success');
+                if (typeof fetchAdminData === 'function' && document.getElementById('admin-dashboard') && !document.getElementById('admin-dashboard').classList.contains('hidden')) {
+                    fetchAdminData();
+                }
             } else {
                 const err = result ? result.error : { message: 'unknown sync error' };
                 console.error('Offline feedback sync failed:', err);
@@ -4297,6 +4329,9 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             if (!error) {
                 localStorage.removeItem('pendingComplaints');
                 showToast('Offline complaints synced!', 'success');
+                if (typeof fetchAdminData === 'function' && document.getElementById('admin-dashboard') && !document.getElementById('admin-dashboard').classList.contains('hidden')) {
+                    fetchAdminData();
+                }
             } else {
                 console.error('Offline complaint sync failed:', error);
                 showToast(`Offline complaint sync failed: ${error.message}`, 'error');
@@ -8665,7 +8700,8 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             const client = await getSupabaseClient();
             if (client) {
                 const table = type === 'feedback' ? 'feedbacks' : 'complaints';
-                const { error } = await client.from(table).upsert(cleanItem);
+                const payloadToUpsert = type === 'feedback' ? prepareFeedbackPayload(cleanItem) : cleanItem;
+                const { error } = await client.from(table).upsert(payloadToUpsert);
                 if (error) console.warn('Supabase restore upsert warning:', error);
             } else {
                 const storageKey = type === 'feedback' ? 'pendingFeedbacks' : 'pendingComplaints';
@@ -8750,7 +8786,8 @@ BISU Calape Campus Portal: https://bisu.edu.ph
 
             if (client) {
                 if (cleanFeedbacks.length > 0) {
-                    const { error } = await client.from('feedbacks').upsert(cleanFeedbacks);
+                    const preparedFeedbacks = cleanFeedbacks.map(f => prepareFeedbackPayload(f));
+                    const { error } = await client.from('feedbacks').upsert(preparedFeedbacks);
                     if (error) console.warn('Batch restore feedbacks warning:', error);
                 }
                 if (cleanComplaints.length > 0) {

@@ -1,0 +1,226 @@
+/* ━━━ Likert Button Effects ━━━ */
+.likert-btn {
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+    transform-origin: center;
+    position: relative;
+    overflow: hidden;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.likert-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.35), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.18s ease;
+}
+
+@media (hover: hover) {
+    .likert-btn:hover {
+        transform: translateY(-2px) scale(1.04);
+        box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+    }
+
+    .likert-btn:hover::after {
+        opacity: 1;
+    }
+}
+
+.likert-btn:active {
+    transform: scale(0.92) !important;
+    transition-duration: 0.08s;
+}
+
+/* 5 - Very Satisfied (Gold) */
+.likert-btn.selected[data-value="5"] {
+    background-color: #eab308;
+    border-color: #eab308;
+    color: #ffffff;
+    font-weight: 900;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 12px -1px rgba(234, 179, 8, 0.35);
+    transform: scale(1.08) translateY(-1px);
+}
+/* 4 - Satisfied (Blue) */
+.likert-btn.selected[data-value="4"] {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+    font-weight: 900;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 12px -1px rgba(37, 99, 235, 0.35);
+    transform: scale(1.08) translateY(-1px);
+}
+/* 3 - Neutral (Gray) */
+.likert-btn.selected[data-value="3"] {
+    background-color: #475569;
+    border-color: #475569;
+    color: #ffffff;
+    font-weight: 900;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 12px -1px rgba(71, 85, 105, 0.35);
+    transform: scale(1.08) translateY(-1px);
+}
+/* 2 - Dissatisfied (Orange) */
+.likert-btn.selected[data-value="2"] {
+    background-color: #ea580c;
+    border-color: #ea580c;
+    color: #ffffff;
+    font-weight: 900;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 12px -1px rgba(234, 88, 12, 0.35);
+    transform: scale(1.08) translateY(-1px);
+}
+/* 1 - Very Dissatisfied (Red) */
+.likert-btn.selected[data-value="1"] {
+    background-color: #e11d48;
+    border-color: #e11d48;
+    color: #ffffff;
+    font-weight: 900;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 12px -1px rgba(225, 29, 72, 0.35);
+    transform: scale(1.08) translateY(-1px);
+}
+/* 0 - Not Applicable (Emerald) */
+.likert-btn.selected[data-value="0"] {
+    background-color: #059669;
+    border-color: #059669;
+    color: #ffffff;
+    font-weight: 900;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 12px -1px rgba(5, 150, 105, 0.35);
+    transform: scale(1.08) translateY(-1px);
+}
+
+/* ━━━ Glassmorphism ━━━ */
+.glass {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(16px) saturate(1.15);
+    -webkit-backdrop-filter: blur(16px) saturate(1.15);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.glass-dark {
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ━━━ Modal Overlays ━━━ */
+[id$="-modal"][class*="fixed"] {
+    transition: opacity 0.2s ease, backdrop-filter 0.2s ease;
+}
+
+[id$="-modal"].hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ━━━ Sidebar ━━━ */
+aside nav button {
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+aside nav button::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%) scaleY(0);
+    width: 3px;
+    height: 60%;
+    border-radius: 0 4px 4px 0;
+    background: #22007c;
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+aside nav button:hover::before {
+    transform: translateY(-50%) scaleY(1);
+}
+
+/* ━━━ Table Enhancements ━━━ */
+table tbody tr {
+    transition: background-color 0.12s ease;
+}
+
+table thead th {
+    position: relative;
+}
+
+/* ━━━ Card Soft Transitions ━━━ */
+.bg-white.rounded-xl.shadow-sm,
+.bg-white.rounded-2xl {
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* ━━━ Dimension Card Soft States ━━━ */
+.dimension-card {
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease !important;
+}
+
+.dimension-card:hover {
+    transform: translateY(-1px);
+    border-color: rgba(34, 0, 124, 0.18) !important;
+    box-shadow: 0 4px 12px -2px rgba(34, 0, 124, 0.05) !important;
+}
+
+.dimension-card.is-rated {
+    border-left: 3px solid #22007c !important;
+    background-color: #fcfdfe !important;
+}
+
+/* ━━━ Gradient Text Utility ━━━ */
+.text-gradient-blue {
+    background: linear-gradient(135deg, #22007c 0%, #5c3cd3 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ━━━ CSS-Driven Modal Overlay Backdrop Transitions ━━━ */
+@keyframes overlay-fade-in {
+    0% {
+        background-color: rgba(15, 23, 42, 0);
+        backdrop-filter: blur(0px);
+    }
+    100% {
+        background-color: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(3px);
+    }
+}
+
+[id$="-modal"].flex {
+    animation: overlay-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ━━━ Citizen's Charter option tiles ━━━ */
+label.cc-option {
+    transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: center;
+}
+
+label.cc-option:hover {
+    transform: translateY(-0.5px);
+    border-color: rgba(34, 0, 124, 0.3);
+}
+
+label.cc-option:active {
+    transform: scale(0.99);
+}
+
+label.cc-option:has(input[type="radio"]:checked) {
+    background-color: rgba(34, 0, 124, 0.05);
+    border-color: rgba(34, 0, 124, 0.4);
+    box-shadow: 0 1px 3px rgba(34, 0, 124, 0.06), 0 0 0 1px rgba(34, 0, 124, 0.1);
+}
+
+select.cc-select.is-selected {
+    background-color: rgba(34, 0, 124, 0.05);
+    border-color: rgba(34, 0, 124, 0.35);
+}
+

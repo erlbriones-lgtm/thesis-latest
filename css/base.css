@@ -1,0 +1,191 @@
+/* Base & Body Settings */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f8fafc;
+    background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 0, 124, 0.06), transparent),
+        radial-gradient(#e2e8f0 1px, transparent 1px);
+    background-size: 100% 100%, 24px 24px;
+    color: #1e293b;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Form Controls */
+select, input[type="text"], input[type="email"], input[type="password"], input[type="date"], textarea {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.15s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+select:focus, input:focus, textarea:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34, 0, 124, 0.05), 0 0 0 3px rgba(34, 0, 124, 0.1);
+}
+
+/* Base Buttons */
+button {
+    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+button:active {
+    transform: scale(0.97) !important;
+}
+
+/* Section Visibility */
+.section-hidden {
+    display: none !important;
+}
+
+/* Admin layout: sidebar pinned left; only dashboard content scrolls */
+html.swal2-shown,
+html.swal2-height-auto,
+body.swal2-shown,
+body.swal2-height-auto {
+    height: 100% !important;
+    min-height: 100% !important;
+}
+
+@media (min-width: 1280px) {
+    body.admin-layout,
+    body.admin-layout.swal2-shown,
+    body.admin-layout.swal2-height-auto,
+    html.swal2-shown body.admin-layout {
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        min-height: 100dvh !important;
+        overflow: hidden !important;
+    }
+
+    body.admin-layout > main,
+    body.admin-layout.swal2-shown > main,
+    body.admin-layout.swal2-height-auto > main {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    body.admin-layout #view-admin:not(.section-hidden),
+    body.admin-layout.swal2-shown #view-admin:not(.section-hidden),
+    body.admin-layout.swal2-height-auto #view-admin:not(.section-hidden) {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        height: 100% !important;
+        max-height: 100% !important;
+    }
+}
+
+body.admin-layout > footer {
+    display: none;
+}
+
+/* Desktop: dock sidebar flush to the left edge of the viewport */
+@media (min-width: 1280px) {
+    body.admin-layout > main {
+        padding-left: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    body.admin-layout #admin-sidebar {
+        border-radius: 0;
+        align-self: stretch !important;
+        height: 100% !important;
+        min-height: 100% !important;
+    }
+}
+
+@media print {
+    body.admin-layout {
+        height: auto;
+        max-height: none;
+        overflow: visible;
+    }
+
+    body.admin-layout > main {
+        overflow: visible;
+        display: block;
+    }
+
+    body.admin-layout #admin-dashboard-scroll {
+        overflow: visible !important;
+    }
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.custom-scrollbar {
+    scrollbar-gutter: stable;
+}
+
+/* Toast Containers */
+#toast-container > div {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Responsive Utilities & Mobile Optimization */
+@media (max-width: 640px) {
+    .animate-pop-in {
+        animation-duration: 0.3s;
+    }
+    .animate-slide-up {
+        animation-duration: 0.35s;
+    }
+
+    /* Mobile form input ergonomics - prevent unwanted auto-zooming on focus */
+    select, input[type="text"], input[type="email"], input[type="password"], input[type="date"], input[type="time"], textarea {
+        font-size: 16px !important;
+        touch-action: manipulation;
+    }
+
+    /* Safe touch targets on mobile */
+    button, a, select, input[type="checkbox"], input[type="radio"] {
+        touch-action: manipulation;
+    }
+
+    /* Momentum scrolling for horizontally overflowing data tables */
+    .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Toast container safe positioning above bottom nav / virtual home indicators */
+    #toast-container {
+        left: 1rem !important;
+        right: 1rem !important;
+        bottom: 1.25rem !important;
+        bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)) !important;
+        align-items: center;
+    }
+
+    #toast-container > div {
+        width: 100%;
+        max-width: 24rem;
+    }
+}

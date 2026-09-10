@@ -1,0 +1,4 @@
+/* style.css - BISU Calape Feedback System Stylesheet */
+@import "./css/base.css";
+@import "./css/components.css";
+@import "./css/animations.css";

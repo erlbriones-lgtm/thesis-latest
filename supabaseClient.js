@@ -1,8 +1,8 @@
 // supabaseClient.js
 // Supabase Client Initialization for BISU Calape Feedback System
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://uqrzyowknvgwnczejqeb.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxcnp5b3drbnZnd25jemVqcWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNTcyNTIsImV4cCI6MjA4NzgzMzI1Mn0.7cXCWcHsPvAYiL9krwKIeISPmDNfhT9MKKb8DD1AQzg';
 
 let client = null;
 let isConfigMissing = false;

@@ -10094,13 +10094,13 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             }
         }
 
-        if (officeParam) {
+        if (officeParam || isQrOrOfficeVisitor) {
             const officeSelect = document.getElementById('office-visited');
             const qrBanner = document.getElementById('qr-office-banner');
             const qrBannerOfficeName = document.getElementById('qr-banner-office-name');
             const qrBannerStationName = document.getElementById('qr-banner-station-name');
 
-            if (officeSelect) {
+            if (officeSelect && officeParam) {
                 setTimeout(() => {
                     let matchingOption = Array.from(officeSelect.options).find(opt => opt.value.toLowerCase() === officeParam.toLowerCase());
                     if (matchingOption) {
@@ -10119,7 +10119,7 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             }
 
             if (qrBanner && qrBannerOfficeName) {
-                qrBannerOfficeName.textContent = officeParam;
+                qrBannerOfficeName.textContent = officeParam || 'All Offices';
                 if (stationParam && qrBannerStationName) {
                     qrBannerStationName.textContent = `Station: ${stationParam}`;
                     qrBannerStationName.classList.remove('hidden');

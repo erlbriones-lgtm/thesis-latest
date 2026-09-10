@@ -1069,6 +1069,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let allAccounts = [];
         try {
             const client = await getSupabaseClient();
+            const supabaseConfigMissing = !client && window.supabaseConfigMissing === true;
             if (client) {
                 const { data: accounts } = await client.from('office_accounts')
                                                        .select('office_name, email')
@@ -2873,7 +2874,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        showToast('Login failed: Invalid credentials or account is not registered as an administrator or office account.', 'error');
+        if (supabaseConfigMissing) {
+            showToast('Login failed: Supabase is not configured locally. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your local environment.', 'error');
+        } else {
+            showToast('Login failed: Invalid credentials or account is not registered as an administrator or office account.', 'error');
+        }
         submitLoginBtn.disabled = false;
         submitLoginBtn.innerHTML = 'Login to Dashboard';
     });

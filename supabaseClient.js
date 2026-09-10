@@ -13,13 +13,17 @@ function initClient() {
     return null;
   }
   try {
-    if (typeof window !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function') {
+    if (typeof window !== 'undefined' && window.supabase) {
       return window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
         },
       });
+    } else if (typeof window !== 'undefined') {
+      // Fallback: wait for Supabase to load
+      console.warn('Supabase CDN not loaded yet, will retry...');
+      return null;
     }
   } catch (err) {
     console.error('Error initializing Supabase client:', err);
@@ -28,9 +32,13 @@ function initClient() {
 }
 
 client = initClient();
-if (!client && (!supabaseUrl || !supabaseAnonKey)) {
-  isConfigMissing = true;
-  console.info('Supabase environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) are not set. The app will run in local storage fallback mode.');
+if (!client) {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    isConfigMissing = true;
+    console.info('Supabase environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) are not set. The app will run in local storage fallback mode.');
+  } else {
+    console.info('Supabase CDN not loaded yet, will retry...');
+  }
 }
 
 window.supabaseClient = client;

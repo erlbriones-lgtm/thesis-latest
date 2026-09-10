@@ -1,8 +1,8 @@
 // supabaseClient.js
 // Supabase Client Initialization for BISU Calape Feedback System
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://uqrzyowknvgwnczejqeb.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxcnp5b3drbnZnd25jemVqcWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNTcyNTIsImV4cCI6MjA4NzgzMzI1Mn0.7cXCWcHsPvAYiL9krwKIeISPmDNfhT9MKKb8DD1AQzg';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 let client = null;
 let isConfigMissing = false;
@@ -13,17 +13,13 @@ function initClient() {
     return null;
   }
   try {
-    if (typeof window !== 'undefined' && window.supabase) {
+    if (typeof window !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function') {
       return window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
         },
       });
-    } else if (typeof window !== 'undefined') {
-      // Fallback: wait for Supabase to load
-      console.warn('Supabase CDN not loaded yet, will retry...');
-      return null;
     }
   } catch (err) {
     console.error('Error initializing Supabase client:', err);
@@ -32,13 +28,9 @@ function initClient() {
 }
 
 client = initClient();
-if (!client) {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    isConfigMissing = true;
-    console.info('Supabase environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) are not set. The app will run in local storage fallback mode.');
-  } else {
-    console.info('Supabase CDN not loaded yet, will retry...');
-  }
+if (!client && (!supabaseUrl || !supabaseAnonKey)) {
+  isConfigMissing = true;
+  console.info('Supabase environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) are not set. The app will run in local storage fallback mode.');
 }
 
 window.supabaseClient = client;

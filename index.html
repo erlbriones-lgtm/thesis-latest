@@ -93,28 +93,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- SweetAlert2 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-        // Wait for Supabase CDN to load before initializing client
-        window.addEventListener('DOMContentLoaded', function() {
-            if (!window.supabase) {
-                console.error('Supabase CDN failed to load');
-                return;
-            }
-            // Initialize Supabase client with hardcoded credentials
-            window.supabaseClient = window.supabase.createClient(
-                'https://uqrzyowknvgwnczejqeb.supabase.co',
-                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxcnp5b3drbnZnd25jemVqcWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNTcyNTIsImV4cCI6MjA4NzgzMzI1Mn0.7cXCWcHsPvAYiL9krwKIeISPmDNfhT9MKKb8DD1AQzg',
-                {
-                    auth: {
-                        persistSession: true,
-                        autoRefreshToken: true,
-                    },
-                }
-            );
-            window.supabaseConfigMissing = false;
-            console.log('Supabase client initialized successfully');
-        });
-    </script>
+    <script type="module" src="supabaseClient.js"></script>
     <script type="module" src="app.js"></script>
 </body>
 </html>

@@ -1278,6 +1278,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (viewFeedback) viewFeedback.classList.remove('section-hidden');
         if (viewComplaint) viewComplaint.classList.add('section-hidden');
         if (viewAdmin) viewAdmin.classList.add('section-hidden');
+
+        // Re-enable office select when returning to default view
+        const officeSelect = document.getElementById('office-visited');
+        if (officeSelect) {
+            officeSelect.disabled = false;
+        }
+
         if (updateRoute && typeof syncUrlRoute === 'function') {
             syncUrlRoute('feedback');
         }
@@ -2440,6 +2447,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 compOfficeHeader.appendChild(opt);
                 compOfficeHeader.value = selectedOffice;
             }
+
+            // Disable complaint office header when specific office is scanned via QR
+            compOfficeHeader.disabled = true;
+        } else if (compOfficeHeader && !selectedOffice) {
+            // Enable complaint office header for general complaint (no specific office)
+            compOfficeHeader.disabled = false;
         }
 
         if (selectedOffice) {
@@ -2480,6 +2493,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (backToFeedbackBtn) {
         backToFeedbackBtn.addEventListener('click', () => {
+            // Re-enable complaint office header when going back to feedback
+            const compOfficeHeader = document.getElementById('comp-office-header');
+            if (compOfficeHeader) {
+                compOfficeHeader.disabled = false;
+            }
             showDefaultView(true);
             window.scrollTo(0,0);
         });
@@ -3322,8 +3340,62 @@ document.addEventListener('DOMContentLoaded', () => {
             currentList.push({ id: 'acc_' + Date.now(), email, office_name: office, password, updated_at: new Date().toISOString() });
             saveLocalOfficeAccounts(currentList);
 
+            // Sync existing feedbacks to this office account
+            if (savedToSupabase && client) {
+                try {
+                    submitAccBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Syncing Feedbacks...';
+
+                    // Find feedbacks with matching office name (case-insensitive)
+                    const { data: existingFeedbacks } = await client
+                        .from(FEEDBACK_TABLE)
+                        .select('id, office_visited')
+                        .ilike('office_visited', `%${office}%`);
+
+                    if (existingFeedbacks && existingFeedbacks.length > 0) {
+                        // Update feedbacks to use the exact office name from the office account
+                        const feedbacksToUpdate = existingFeedbacks.filter(f => f.office_visited !== office);
+                        if (feedbacksToUpdate.length > 0) {
+                            const { error: updateError } = await client
+                                .from(FEEDBACK_TABLE)
+                                .update({ office_visited: office })
+                                .in('id', feedbacksToUpdate.map(f => f.id));
+
+                            if (!updateError) {
+                                console.log(`Synced ${feedbacksToUpdate.length} feedback(s) to office account: ${office}`);
+                            } else {
+                                console.warn('Failed to sync some feedbacks:', updateError);
+                            }
+                        }
+                    }
+
+                    // Also sync complaints with matching place_of_incident
+                    const { data: existingComplaints } = await client
+                        .from(COMPLAIN_TABLE)
+                        .select('id, place_of_incident')
+                        .ilike('place_of_incident', `%${office}%`);
+
+                    if (existingComplaints && existingComplaints.length > 0) {
+                        const complaintsToUpdate = existingComplaints.filter(c => c.place_of_incident !== office);
+                        if (complaintsToUpdate.length > 0) {
+                            const { error: updateError } = await client
+                                .from(COMPLAIN_TABLE)
+                                .update({ place_of_incident: office })
+                                .in('id', complaintsToUpdate.map(c => c.id));
+
+                            if (!updateError) {
+                                console.log(`Synced ${complaintsToUpdate.length} complaint(s) to office account: ${office}`);
+                            } else {
+                                console.warn('Failed to sync some complaints:', updateError);
+                            }
+                        }
+                    }
+                } catch (syncError) {
+                    console.warn('Error syncing feedbacks to office account:', syncError);
+                }
+            }
+
             if (savedToSupabase) {
-                showToast(`Credentials successfully saved to database for ${office} (${email})!`, 'success');
+                showToast(`Credentials successfully saved to database for ${office} (${email})! Feedbacks synced.`, 'success');
             } else {
                 showToast(`Office credentials saved locally and authorized for ${office} (${email}).`, 'success');
             }
@@ -3692,58 +3764,27 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             </div>
         ` : '';
 
-        // Email Response Yes/No Option Module
-        const emailResponseOptionCard = `
-            <div id="email-response-card" class="bg-gradient-to-br from-blue-50/80 to-indigo-50/50 border border-blue-200 rounded-2xl p-3.5 text-left text-xs space-y-3 mb-2 shadow-2xs transition-all duration-200">
+        // Save to Device Option Module
+        const saveToDeviceCard = `
+            <div id="save-device-card" class="bg-gradient-to-br from-emerald-50/80 to-green-50/50 border border-emerald-200 rounded-2xl p-3.5 text-left text-xs space-y-3 mb-2 shadow-2xs transition-all duration-200">
                 <div class="flex items-center justify-between">
                     <span class="font-extrabold text-slate-800 flex items-center gap-1.5 text-xs">
-                        <i class="fa-solid fa-envelope text-[#22007c]"></i>
-                        <span>${t["t-email-ask"] || "Would you like to email a copy of your response?"}</span>
+                        <i class="fa-solid fa-download text-emerald-600"></i>
+                        <span>${t["t-save-ask"] || "Would you like to save a copy of your response?"}</span>
                     </span>
                 </div>
 
-                <!-- Yes / No Choice Buttons -->
-                <div class="grid grid-cols-2 gap-2">
-                    <button type="button" id="email-opt-yes-btn" class="py-2.5 px-3 rounded-xl border ${defaultEmail ? 'bg-blue-100 border-[#22007c] text-[#22007c] ring-2 ring-blue-400/40' : 'border-blue-300 text-blue-900 bg-white hover:bg-blue-50 hover:border-[#22007c]'} font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs">
-                        <i class="fa-solid fa-circle-check text-blue-600 text-xs"></i>
-                        <span>${t["t-email-opt-yes"] || "Yes, email my copy"}</span>
+                <div class="flex flex-col gap-2">
+                    <button type="button" id="btn-download-pdf-receipt" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2.5 px-3 rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
+                        <i class="fa-solid fa-file-pdf text-[11px]"></i>
+                        <span>${t["t-download-pdf-btn"] || "Download PDF Receipt"}</span>
                     </button>
-                    <button type="button" id="email-opt-no-btn" class="py-2.5 px-3 rounded-xl border border-slate-200 font-bold text-xs text-slate-600 bg-white hover:bg-slate-100 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs">
-                        <i class="fa-solid fa-circle-xmark text-slate-400 text-xs"></i>
-                        <span>${t["t-email-opt-no"] || "No, thanks"}</span>
+                    <button type="button" id="btn-copy-receipt-text" title="Copy receipt text to clipboard" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-3 rounded-xl text-[11px] transition shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-copy text-[10px] text-[#22007c]"></i>
+                        <span>${t["t-copy-btn"] || "Copy Summary Text"}</span>
                     </button>
                 </div>
-
-                <!-- Dynamic Email Input Section (Appears when Yes is clicked or when prefilled) -->
-                <div id="email-input-container" class="${defaultEmail ? '' : 'hidden'} pt-2.5 border-t border-blue-200/70 space-y-2.5 animate-fade-in">
-                    <div>
-                        <label for="feedback-receipt-email" class="block text-[11px] font-bold text-slate-700 mb-1">
-                            ${t["t-email-placeholder"] || "Enter your email address..."}
-                        </label>
-                        <div class="relative">
-                            <input type="email" id="feedback-receipt-email" placeholder="e.g. user@gmail.com or email@example.com" value="${escapeHtml(defaultEmail)}" class="w-full bg-white border border-blue-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#22007c] shadow-2xs">
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col gap-1.5 pt-0.5">
-                        <div class="flex items-center gap-2">
-                            <button type="button" id="btn-send-email-receipt" class="flex-1 bg-[#22007c] hover:bg-[#180058] text-white font-extrabold py-2 px-3 rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98">
-                                <i class="fa-solid fa-paper-plane text-[11px]"></i>
-                                <span id="btn-send-label">${t["t-email-send-btn"] || "Send Email Receipt"}</span>
-                            </button>
-                            <button type="button" id="btn-gmail-receipt" class="bg-white hover:bg-rose-50 border border-slate-300 hover:border-rose-300 text-slate-700 hover:text-rose-700 font-extrabold py-2 px-3 rounded-xl text-xs transition shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98" title="Open directly in Gmail Web">
-                                <i class="fa-brands fa-google text-red-500 text-xs"></i>
-                                <span>Gmail</span>
-                            </button>
-                        </div>
-
-                        <button type="button" id="btn-copy-receipt-text" title="Copy receipt text to clipboard" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-1.5 px-3 rounded-xl text-[11px] transition shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer">
-                            <i class="fa-solid fa-copy text-[10px] text-[#22007c]"></i>
-                            <span>${t["t-email-copy-btn"] || "Copy Summary Text"}</span>
-                        </button>
-                    </div>
-                    <div id="email-receipt-status" class="text-[11px] text-center font-bold text-slate-600 pt-0.5 hidden"></div>
-                </div>
+                <div id="save-status" class="text-[11px] text-center font-bold text-slate-600 pt-0.5 hidden"></div>
             </div>
         `;
 
@@ -3759,7 +3800,7 @@ BISU Calape Campus Portal: https://bisu.edu.ph
                             ${descText}
                         </p>
                         ${detailsCard}
-                        ${emailResponseOptionCard}
+                        ${saveToDeviceCard}
                         <p class="text-xs text-slate-500 font-medium leading-relaxed">
                             ${subText}
                         </p>
@@ -3776,95 +3817,81 @@ BISU Calape Campus Portal: https://bisu.edu.ph
                     cancelButton: 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-xl transition text-sm cursor-pointer'
                 },
                 didOpen: (popup) => {
-                    const yesBtn = popup.querySelector('#email-opt-yes-btn');
-                    const noBtn = popup.querySelector('#email-opt-no-btn');
-                    const container = popup.querySelector('#email-input-container');
-                    const emailInput = popup.querySelector('#feedback-receipt-email');
-                    const sendBtn = popup.querySelector('#btn-send-email-receipt');
-                    const gmailBtn = popup.querySelector('#btn-gmail-receipt');
+                    const downloadPdfBtn = popup.querySelector('#btn-download-pdf-receipt');
                     const copyBtn = popup.querySelector('#btn-copy-receipt-text');
-                    const statusEl = popup.querySelector('#email-receipt-status');
-                    const sendLabel = popup.querySelector('#btn-send-label');
+                    const statusEl = popup.querySelector('#save-status');
 
-                    if (emailInput) {
-                        emailInput.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                sendBtn?.click();
+                    // Generate receipt text
+                    const receiptBody = generateFeedbackReceiptText(payload, lang, defaultEmail);
+                    const refCode = `BISU-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+                    // Download PDF Receipt
+                    if (downloadPdfBtn) {
+                        downloadPdfBtn.addEventListener('click', async () => {
+                            downloadPdfBtn.disabled = true;
+                            downloadPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Generating...';
+
+                            try {
+                                const filename = `BISU_Feedback_Receipt_${refCode}.pdf`;
+                                await generateAndDownloadPdfReportFile(filename, 'Feedback Receipt', receiptBody);
+                                
+                                if (statusEl) {
+                                    statusEl.classList.remove('hidden');
+                                    statusEl.classList.add('text-emerald-600');
+                                    statusEl.textContent = '✓ PDF downloaded successfully!';
+                                }
+                                showToast('PDF receipt downloaded!', 'success');
+                            } catch (err) {
+                                console.error('PDF generation error:', err);
+                                if (statusEl) {
+                                    statusEl.classList.remove('hidden');
+                                    statusEl.classList.add('text-red-600');
+                                    statusEl.textContent = '✗ Error generating PDF';
+                                }
+                                showToast('Error generating PDF receipt', 'error');
                             }
+
+                            downloadPdfBtn.disabled = false;
+                            downloadPdfBtn.innerHTML = '<i class="fa-solid fa-file-pdf text-[11px]"></i> Download PDF Receipt';
                         });
                     }
 
-                    if (yesBtn && noBtn && container) {
-                        yesBtn.addEventListener('click', () => {
-                            container.classList.remove('hidden');
-                            yesBtn.classList.add('bg-blue-100', 'border-[#22007c]', 'text-[#22007c]', 'ring-2', 'ring-blue-400/40');
-                            yesBtn.classList.remove('bg-white');
-                            noBtn.classList.remove('bg-slate-200', 'border-slate-400', 'text-slate-900');
-                            noBtn.classList.add('bg-white');
-                            if (emailInput) {
-                                emailInput.focus();
-                            }
-                        });
-
-                        noBtn.addEventListener('click', () => {
-                            container.classList.add('hidden');
-                            noBtn.classList.add('bg-slate-200', 'border-slate-400', 'text-slate-900');
-                            noBtn.classList.remove('bg-white');
-                            yesBtn.classList.remove('bg-blue-100', 'border-[#22007c]', 'text-[#22007c]', 'ring-2', 'ring-blue-400/40');
-                            yesBtn.classList.add('bg-white');
-                            if (statusEl) {
-                                statusEl.classList.add('hidden');
-                                statusEl.textContent = '';
-                            }
-                        });
-                    }
-
-                    const handleEmailDispatch = (mode = 'auto') => {
-                        const enteredEmail = (emailInput?.value || '').trim();
-                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                        if (!enteredEmail || !emailRegex.test(enteredEmail)) {
-                            if (statusEl) {
-                                statusEl.innerHTML = `<span class="text-rose-600 font-bold"><i class="fa-solid fa-circle-exclamation mr-1"></i> ${t["t-email-invalid"] || "Please enter a valid email address."}</span>`;
-                                statusEl.classList.remove('hidden');
-                            }
-                            emailInput?.focus();
-                            return;
-                        }
-
-                        openFeedbackEmailReceipt(payload, enteredEmail, lang, mode);
-
-                        if (statusEl) {
-                            statusEl.innerHTML = `<span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check mr-1 text-emerald-600"></i> ${t["t-email-success-open"] || "Opening email app with feedback receipt..."}</span>`;
-                            statusEl.classList.remove('hidden');
-                        }
-                        showToast(`Prepared response for ${enteredEmail}`, 'info');
-                    };
-
-                    if (sendBtn) {
-                        sendBtn.addEventListener('click', () => handleEmailDispatch('auto'));
-                    }
-
-                    if (gmailBtn) {
-                        gmailBtn.addEventListener('click', () => handleEmailDispatch('gmail'));
-                    }
-
+                    // Copy Receipt Text
                     if (copyBtn) {
                         copyBtn.addEventListener('click', () => {
-                            const enteredEmail = (emailInput?.value || '').trim();
-                            const receiptText = generateFeedbackReceiptText(payload, lang, enteredEmail);
                             if (navigator.clipboard && navigator.clipboard.writeText) {
-                                navigator.clipboard.writeText(receiptText).then(() => {
+                                navigator.clipboard.writeText(receiptBody).then(() => {
                                     if (statusEl) {
-                                        statusEl.innerHTML = `<span class="text-emerald-700 font-bold"><i class="fa-solid fa-check mr-1"></i> ${t["t-email-copied"] || "Response summary copied to clipboard!"}</span>`;
                                         statusEl.classList.remove('hidden');
+                                        statusEl.classList.add('text-emerald-600');
+                                        statusEl.textContent = '✓ Copied to clipboard!';
                                     }
-                                    showToast(t["t-email-copied"] || "Response summary copied to clipboard!", 'success');
-                                }).catch(() => {
-                                    showToast("Response summary copied!", "success");
+                                    showToast('Receipt copied to clipboard!', 'success');
+                                }).catch(err => {
+                                    console.error('Clipboard error:', err);
+                                    showToast('Failed to copy to clipboard', 'error');
                                 });
                             } else {
-                                showToast(t["t-email-copied"] || "Response summary copied to clipboard!", 'success');
+                                // Fallback for older browsers
+                                const textArea = document.createElement('textarea');
+                                textArea.value = receiptBody;
+                                textArea.style.position = 'fixed';
+                                textArea.style.left = '-999999px';
+                                document.body.appendChild(textArea);
+                                textArea.select();
+                                try {
+                                    document.execCommand('copy');
+                                    if (statusEl) {
+                                        statusEl.classList.remove('hidden');
+                                        statusEl.classList.add('text-emerald-600');
+                                        statusEl.textContent = '✓ Copied to clipboard!';
+                                    }
+                                    showToast('Receipt copied to clipboard!', 'success');
+                                } catch (err) {
+                                    console.error('Fallback copy error:', err);
+                                    showToast('Failed to copy to clipboard', 'error');
+                                }
+                                document.body.removeChild(textArea);
                             }
                         });
                     }
@@ -4102,16 +4129,16 @@ BISU Calape Campus Portal: https://bisu.edu.ph
                     `,
                     icon: 'success',
                     showCancelButton: true,
-                    confirmButtonText: '<i class="fa-solid fa-print mr-1"></i> Print / Save Copy',
+                    confirmButtonText: '<i class="fa-solid fa-download mr-1"></i> Download PDF Copy',
                     cancelButtonText: 'Done & Return',
                     customClass: {
                         popup: 'rounded-2xl border-t-8 border-red-600 shadow-2xl',
-                        confirmButton: 'bg-red-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-red-700 transition shadow-md',
+                        confirmButton: 'bg-emerald-600 text-white font-bold px-5 py-2.5 rounded-xl hover:bg-emerald-700 transition shadow-md',
                         cancelButton: 'bg-slate-100 text-slate-700 font-bold px-4 py-2.5 rounded-xl hover:bg-slate-200 transition'
                     }
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        printOfficialComplaintForm(payload);
+                        generateComplaintPdf(payload);
                     }
                     if (complaintForm) complaintForm.reset();
                     const compAttachmentFilename = document.getElementById('comp-attachment-filename');
@@ -4148,6 +4175,266 @@ BISU Calape Campus Portal: https://bisu.edu.ph
         }
     });
 
+    // === Generate Complaint PDF ===
+    async function generateComplaintPdf(c) {
+        const bisuLogo = (typeof cachedLogos !== 'undefined' && cachedLogos.bisu) ? cachedLogos.bisu : await fetchAsPngDataUrl('/images/BISU.webp');
+        const bagongPilipinasLogo = (typeof cachedLogos !== 'undefined' && cachedLogos.bagongPilipinas) ? cachedLogos.bagongPilipinas : await fetchAsPngDataUrl('/images/BAGONG-PILIPINAS-LOGO-1-1.webp');
+        const tuvLogo = (typeof cachedLogos !== 'undefined' && cachedLogos.tuv) ? cachedLogos.tuv : await fetchAsPngDataUrl('public/images/images.webp') || await fetchAsPngDataUrl('/images/images.webp');
+
+        const isAnon = !c.name || c.name.trim().toLowerCase() === 'anonymous' || c.name.trim() === '';
+        const nameDisplay = isAnon ? 'ANONYMOUS COMPLAINANT' : escapeHtml(c.name);
+        const dateStr = c.created_at ? new Date(c.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString();
+        const refCode = 'BISU-COMPLAINT-' + Date.now().toString(36).toUpperCase();
+
+        // Use jsPDF to generate downloadable PDF
+        try {
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                // Fallback to print if jsPDF not available
+                printOfficialComplaintForm(c);
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+
+            // Add logos
+            if (bisuLogo && bisuLogo.startsWith('data:')) {
+                try { doc.addImage(bisuLogo, 'PNG', 15, 10, 20, 20); } catch (e) {}
+            }
+            if (tuvLogo && tuvLogo.startsWith('data:')) {
+                try { doc.addImage(tuvLogo, 'PNG', 160, 10, 20, 20); } catch (e) {}
+            }
+            if (bagongPilipinasLogo && bagongPilipinasLogo.startsWith('data:')) {
+                try { doc.addImage(bagongPilipinasLogo, 'PNG', 182, 10, 20, 20); } catch (e) {}
+            }
+
+            // Header
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text('Republic of the Philippines', 105, 13, { align: 'center' });
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.setTextColor(34, 0, 124);
+            doc.text('BOHOL ISLAND STATE UNIVERSITY', 105, 18, { align: 'center' });
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(15, 23, 42);
+            doc.text('CALAPE CAMPUS', 105, 22.5, { align: 'center' });
+
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(7.5);
+            doc.setTextColor(100, 116, 139);
+            doc.text('San Isidro, Calape, Bohol • Quality Management System', 105, 26.5, { align: 'center' });
+
+            // Red line
+            doc.setDrawColor(220, 38, 38);
+            doc.setLineWidth(0.6);
+            doc.line(15, 29.5, 195, 29.5);
+
+            // Form title
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.setTextColor(185, 28, 28);
+            doc.text('COMPLAINT FORM', 105, 36, { align: 'center' });
+
+            // Intro box
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(203, 213, 225);
+            doc.roundedRect(15, 40, 180, 25, 2, 2, 'FD');
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(15, 23, 42);
+            const introText = doc.splitTextToSize('The Customer Satisfaction Feedback Complaint Form shall be given to any client who is experiencing dissatisfaction with the services rendered by the unit/office to take necessary actions whenever there is a need to. Please fill out this form with the needed data/information. Rest assured that the data/information gathered will be handled with confidentiality which is in accordance with the DATA PRIVACY ACT.', 170);
+            let yPos = 45;
+            introText.forEach(line => {
+                doc.text(line, 20, yPos);
+                yPos += 3.5;
+            });
+
+            // Person complained of
+            yPos += 3;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(15, 23, 42);
+            doc.text('NAME OF PERSON COMPLAINT OF:', 20, yPos);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(185, 28, 28);
+            doc.text(escapeHtml(c.person_complained_of || c.details_of_complaint || 'N/A'), 80, yPos);
+
+            // Section header
+            yPos += 8;
+            doc.setFillColor(15, 23, 42);
+            doc.rect(15, yPos, 180, 6, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.text('DETAILS OF THE COMPLAINANT', 18, yPos + 4);
+
+            // Complainant details
+            yPos += 10;
+            doc.setTextColor(15, 23, 42);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.text('Name of Complainant:', 20, yPos);
+            doc.text(nameDisplay, 70, yPos);
+            yPos += 5;
+            doc.text('Address:', 20, yPos);
+            doc.text(escapeHtml(c.address || 'N/A'), 70, yPos);
+            yPos += 5;
+            doc.text('Sex:', 20, yPos);
+            doc.text(escapeHtml(c.sex || 'N/A'), 70, yPos);
+            doc.text('Age:', 120, yPos);
+            doc.text(escapeHtml(c.age || 'N/A'), 140, yPos);
+            yPos += 5;
+            doc.text('Civil Status:', 20, yPos);
+            doc.text(escapeHtml(c.civil_status || 'N/A'), 70, yPos);
+            doc.text('Contact Details:', 120, yPos);
+            doc.text(escapeHtml(c.contact_details || 'N/A'), 155, yPos);
+
+            // Complaint details section
+            yPos += 10;
+            doc.setFillColor(15, 23, 42);
+            doc.rect(15, yPos, 180, 6, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.text('COMPLAINT DETAILS', 18, yPos + 4);
+
+            yPos += 10;
+            doc.setTextColor(15, 23, 42);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.text('Date of Incident:', 20, yPos);
+            doc.text(escapeHtml(c.date_of_incident || 'N/A'), 70, yPos);
+            doc.text('Time:', 120, yPos);
+            doc.text(escapeHtml(c.time_of_incident || 'N/A'), 140, yPos);
+            yPos += 5;
+            doc.text('Place of Incident:', 20, yPos);
+            doc.text(escapeHtml(c.place_of_incident || 'N/A'), 70, yPos);
+            yPos += 5;
+            doc.text('Act/s Complained of:', 20, yPos);
+            doc.setFont('helvetica', 'bold');
+            doc.text(escapeHtml(c.details_of_complaint || 'N/A'), 70, yPos);
+
+            // Narrative
+            yPos += 10;
+            doc.setFillColor(15, 23, 42);
+            doc.rect(15, yPos, 180, 6, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.text('NARRATIVE REPORT OF COMPLAINT', 18, yPos + 4);
+
+            yPos += 10;
+            doc.setFillColor(255, 255, 255);
+            doc.setDrawColor(0, 0, 0);
+            doc.rect(15, yPos, 180, 30, 'S');
+            doc.setTextColor(15, 23, 42);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            const narrativeLines = doc.splitTextToSize(escapeHtml(c.narrative_report || 'No narrative report provided.'), 170);
+            narrativeLines.forEach(line => {
+                doc.text(line, 20, yPos);
+                yPos += 3.5;
+            });
+
+            // Proof
+            yPos += 5;
+            doc.setFillColor(15, 23, 42);
+            doc.rect(15, yPos, 180, 6, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.text('PROOF OF COMPLAINT (Document/s / Evidence/s / Witness/es)', 18, yPos + 4);
+
+            yPos += 10;
+            doc.setFillColor(255, 255, 255);
+            doc.setDrawColor(0, 0, 0);
+            doc.rect(15, yPos, 180, 20, 'S');
+            doc.setTextColor(15, 23, 42);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            const proofLines = doc.splitTextToSize(escapeHtml(c.proof_of_complaint || 'None specified.'), 170);
+            proofLines.forEach(line => {
+                doc.text(line, 20, yPos);
+                yPos += 3.5;
+            });
+
+            // Outcome
+            yPos += 5;
+            doc.setFillColor(15, 23, 42);
+            doc.rect(15, yPos, 180, 6, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.text('COMPLAINT OUTCOME (Desired outcome or expected resolution)', 18, yPos + 4);
+
+            yPos += 10;
+            doc.setFillColor(255, 255, 255);
+            doc.setDrawColor(0, 0, 0);
+            doc.rect(15, yPos, 180, 20, 'S');
+            doc.setTextColor(15, 23, 42);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            const outcomeLines = doc.splitTextToSize(escapeHtml(c.desired_outcome || 'None specified.'), 170);
+            outcomeLines.forEach(line => {
+                doc.text(line, 20, yPos);
+                yPos += 3.5;
+            });
+
+            // Pledge
+            yPos += 8;
+            doc.setFillColor(250, 250, 250);
+            doc.setDrawColor(0, 0, 0);
+            doc.roundedRect(15, yPos, 180, 25, 2, 2, 'FD');
+            doc.setTextColor(15, 23, 42);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            const pledgeText = doc.splitTextToSize('Legal Pledge: Upon filling-up this form, I bind myself to stand on the truth of this complaint as a COMPLAINANT/AGGRIEVED PARTY on behalf of the public and the institution for legal proceedings may be required as provided by the existing laws. Terms of Agreement: I agree that the provided information asked herein will be used by the University for whatever legal purpose it may serve.', 170);
+            pledgeText.forEach(line => {
+                doc.text(line, 20, yPos);
+                yPos += 3;
+            });
+
+            // Signature
+            yPos += 10;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.text(escapeHtml(c.signature_name || c.name || 'Anonymous'), 60, yPos, { align: 'center' });
+            doc.text('Signature over Printed Name of the Complainant', 60, yPos + 5, { align: 'center' });
+            doc.text(dateStr, 150, yPos, { align: 'center' });
+            doc.text('(Date)', 150, yPos + 5, { align: 'center' });
+
+            // Footer
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(100, 116, 139);
+            doc.text('F-AQA-CSF-004 | Rev. 2 | 07/01/24', 30, 285);
+            doc.text('Page 1 of 1', 180, 285);
+
+            // Save PDF
+            const filename = `BISU_Complaint_${refCode}.pdf`;
+            doc.save(filename);
+            showToast('Complaint PDF downloaded successfully!', 'success');
+
+        } catch (err) {
+            console.error('PDF generation error:', err);
+            showToast('Error generating PDF. Using print fallback.', 'error');
+            // Fallback to print
+            const win = window.open('', '_blank');
+            if (win) {
+                win.document.write(printHtml);
+                win.document.close();
+                win.focus();
+                setTimeout(() => win.print(), 500);
+            }
+        }
+    }
+
     // === Official Complaint Form Printing (F-AQA-CSF-004 Rev. 2) ===
     function printOfficialComplaintForm(c) {
         const bisuLogo = (typeof cachedLogos !== 'undefined' && cachedLogos.bisu) ? cachedLogos.bisu : new URL('images/BISU.webp', window.location.origin).href;
@@ -4158,145 +4445,56 @@ BISU Calape Campus Portal: https://bisu.edu.ph
         const nameDisplay = isAnon ? 'ANONYMOUS COMPLAINANT' : escapeHtml(c.name);
         const dateStr = c.created_at ? new Date(c.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString();
 
-        const printHtml = `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <title>COMPLAINT FORM - ${escapeHtml(c.office_of || c.place_of_incident || 'BISU Calape')}</title>
-                <style>
-                    @page { size: portrait; margin: 10mm 12mm; }
-                    body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; background: #fff; margin: 0; padding: 15px; font-size: 11px; line-height: 1.4; }
-                    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; border-bottom: 2px solid #0f172a; padding-bottom: 8px; }
-                    .header-table td { vertical-align: middle; }
-                    .logo-cell { width: 15%; text-align: center; }
-                    .logo-cell img { max-height: 65px; width: auto; object-fit: contain; }
-                    .title-cell { text-align: center; }
-                    .title-cell p { margin: 1px 0; font-size: 10px; font-weight: 600; text-transform: uppercase; color: #334155; }
-                    .title-cell h1 { margin: 2px 0; font-size: 14px; font-weight: 900; text-transform: uppercase; color: #000; }
-                    .office-line { font-weight: 800; font-size: 12px; margin-top: 4px; text-decoration: underline; color: #000; }
-                    .motto { font-style: italic; font-size: 9px; font-weight: bold; color: #475569; margin-top: 2px; }
-                    .form-title { text-align: center; font-size: 16px; font-weight: 900; margin: 10px 0; text-transform: uppercase; letter-spacing: 1px; text-decoration: underline; color: #b91c1c; }
-                    .intro-box { border: 1px solid #cbd5e1; padding: 8px; font-size: 10px; margin-bottom: 12px; text-align: justify; background: #f8fafc; border-radius: 4px; }
-                    .section-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 1px solid #000; }
-                    .section-header { background: #0f172a; color: #fff; font-weight: 800; padding: 5px 8px; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
-                    .field-label { font-weight: 700; text-transform: uppercase; font-size: 10px; background: #f1f5f9; padding: 5px 8px; border: 1px solid #cbd5e1; width: 25%; }
-                    .field-value { padding: 5px 8px; border: 1px solid #cbd5e1; font-size: 10px; }
-                    .narrative-box { border: 1px solid #000; padding: 8px; min-height: 60px; margin-bottom: 10px; white-space: pre-wrap; font-size: 10px; background: #fff; }
-                    .pledge-box { border: 1px solid #000; padding: 10px; margin-bottom: 15px; font-size: 10px; line-height: 1.4; background: #fafafa; }
-                    .signature-grid { width: 100%; border-collapse: collapse; margin-top: 30px; }
-                    .signature-cell { width: 50%; text-align: center; vertical-align: bottom; }
-                    .sig-line { border-top: 1px solid #000; width: 80%; margin: 0 auto; padding-top: 3px; font-weight: bold; font-size: 9px; text-transform: uppercase; }
-                    .doc-footer { display: flex; justify-content: space-between; font-family: monospace; font-size: 9px; font-weight: bold; color: #64748b; margin-top: 15px; border-top: 1px solid #cbd5e1; padding-top: 4px; }
-                </style>
-            </head>
-            <body>
-                <table class="header-table">
-                    <tr>
-                        <td class="logo-cell"><img src="${bisuLogo}" alt="BISU Logo" onerror="this.onerror=null; this.src='images/BISU.webp';"></td>
-                        <td class="title-cell">
-                            <p>Republic of the Philippines</p>
-                            <h1>BOHOL ISLAND STATE UNIVERSITY</h1>
-                            <p>Calape Campus, Bohol, Philippines</p>
-                            <div class="office-line">Office of the ${escapeHtml(c.office_of || c.place_of_incident || '_______________')}</div>
-                            <div class="motto">Balance | Integrity | Stewardship | Uprightness</div>
-                        </td>
-                        <td class="logo-cell" style="width: 20%;">
-                            <img src="${bagongPilipinasLogo}" style="max-height: 45px; margin-right: 4px;" alt="Bagong Pilipinas" onerror="this.onerror=null; this.src='images/BAGONG-PILIPINAS-LOGO-1-1.png';">
-                            <img src="${tuvLogo}" style="max-height: 45px;" alt="TUV Rheinland" onerror="this.onerror=null; this.src='public/images/images.webp';">
-                        </td>
-                    </tr>
-                </table>
-
-                <div class="form-title">COMPLAINT FORM</div>
-
-                <div class="intro-box">
-                    The Customer Satisfaction Feedback Complaint Form shall be given to any client who is experiencing dissatisfaction with the services rendered by the unit/office to take necessary actions whenever there is a need to. Please fill out this form with the needed data/information. Rest assured that the data/information gathered will be handled with confidentiality which is in accordance with the <strong>DATA PRIVACY ACT</strong>.
-                </div>
-
-                <table class="section-table">
-                    <tr>
-                        <td class="field-label" style="width: 32%;">NAME OF PERSON COMPLAINT OF :</td>
-                        <td class="field-value" style="font-weight: bold; font-size: 11px; color: #b91c1c;">${escapeHtml(c.person_complained_of || c.details_of_complaint || 'N/A')}</td>
-                    </tr>
-                </table>
-
-                <div class="section-header">DETAILS OF THE COMPLAINANT</div>
-                <table class="section-table">
-                    <tr>
-                        <td class="field-label">Name of Complainant</td>
-                        <td class="field-value" colspan="3">${nameDisplay}</td>
-                    </tr>
-                    <tr>
-                        <td class="field-label">Address</td>
-                        <td class="field-value" colspan="3">${escapeHtml(c.address || 'N/A')}</td>
-                    </tr>
-                    <tr>
-                        <td class="field-label">Sex</td>
-                        <td class="field-value">${escapeHtml(c.sex || 'N/A')}</td>
-                        <td class="field-label">Age</td>
-                        <td class="field-value">${escapeHtml(c.age || 'N/A')}</td>
-                    </tr>
-                    <tr>
-                        <td class="field-label">Civil Status</td>
-                        <td class="field-value">${escapeHtml(c.civil_status || 'N/A')}</td>
-                        <td class="field-label">Contact Details</td>
-                        <td class="field-value">${escapeHtml(c.contact_details || 'N/A')}</td>
-                    </tr>
-                </table>
-
-                <div class="section-header">COMPLAINT DETAILS</div>
-                <table class="section-table">
-                    <tr>
-                        <td class="field-label">Date of Incident</td>
-                        <td class="field-value">${escapeHtml(c.date_of_incident || 'N/A')}</td>
-                        <td class="field-label">Time</td>
-                        <td class="field-value">${escapeHtml(c.time_of_incident || 'N/A')}</td>
-                    </tr>
-                    <tr>
-                        <td class="field-label">Place of Incident</td>
-                        <td class="field-value" colspan="3">${escapeHtml(c.place_of_incident || 'N/A')}</td>
-                    </tr>
-                    <tr>
-                        <td class="field-label">Act/s Complained of</td>
-                        <td class="field-value" colspan="3" style="font-weight: bold;">${escapeHtml(c.details_of_complaint || 'N/A')}</td>
-                    </tr>
-                </table>
-
-                <div class="section-header">NARRATIVE REPORT OF COMPLAINT</div>
-                <div class="narrative-box">${escapeHtml(c.narrative_report || 'No narrative report provided.')}</div>
-
-                <div class="section-header">PROOF OF COMPLAINT <span style="font-weight: normal; font-size: 9px;">(Document/s / Evidence/s / Witness/es)</span></div>
-                <div class="narrative-box" style="min-height: 45px;">${escapeHtml(c.proof_of_complaint || 'None specified.')}</div>
-
-                <div class="section-header">COMPLAINT OUTCOME <span style="font-weight: normal; font-size: 9px;">(Desired outcome or expected resolution)</span></div>
-                <div class="narrative-box" style="min-height: 45px;">${escapeHtml(c.desired_outcome || 'None specified.')}</div>
-
-                <div class="pledge-box">
-                    <strong>Legal Pledge:</strong> Upon filling-up this form, I bind myself to stand on the truth of this complaint as a <strong>COMPLAINANT/AGGRIEVED PARTY</strong> on behalf of the public and the institution for legal proceedings may be required as provided by the existing laws.<br><br>
-                    <strong>Terms of Agreement:</strong> I agree that the provided information asked herein will be used by the University for whatever legal purpose it may serve.
-                </div>
-
-                <table class="signature-grid">
-                    <tr>
-                        <td class="signature-cell">
-                            <div style="font-weight: bold; text-decoration: underline; text-transform: uppercase; margin-bottom: 2px;">${escapeHtml(c.signature_name || c.name || 'Anonymous')}</div>
-                            <div class="sig-line">Signature over Printed Name of the Complainant</div>
-                        </td>
-                        <td class="signature-cell">
-                            <div style="font-weight: bold; margin-bottom: 2px;">${dateStr}</div>
-                            <div class="sig-line">(Date)</div>
-                        </td>
-                    </tr>
-                </table>
-
-                <div class="doc-footer">
-                    <span>F-AQA-CSF-004 | Rev. 2 | 07/01/24</span>
-                    <span>Page 1 of 1</span>
-                </div>
-            </body>
-            </html>
-        `;
+        var printHtml = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>COMPLAINT FORM - ' + escapeHtml(c.office_of || c.place_of_incident || 'BISU Calape') + '</title>';
+        printHtml += '<style>@page { size: portrait; margin: 10mm 12mm; } body { font-family: "Segoe UI", Arial, sans-serif; color: #0f172a; background: #fff; margin: 0; padding: 15px; font-size: 11px; line-height: 1.4; }';
+        printHtml += '.header-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; border-bottom: 2px solid #0f172a; padding-bottom: 8px; }';
+        printHtml += '.header-table td { vertical-align: middle; } .logo-cell { width: 15%; text-align: center; } .logo-cell img { max-height: 65px; width: auto; object-fit: contain; }';
+        printHtml += '.title-cell { text-align: center; } .title-cell p { margin: 1px 0; font-size: 10px; font-weight: 600; text-transform: uppercase; color: #334155; }';
+        printHtml += '.title-cell h1 { margin: 2px 0; font-size: 14px; font-weight: 900; text-transform: uppercase; color: #000; }';
+        printHtml += '.motto { font-style: italic; font-size: 9px; font-weight: bold; color: #475569; margin-top: 2px; }';
+        printHtml += '.form-title { text-align: center; font-size: 16px; font-weight: 900; margin: 10px 0; text-transform: uppercase; letter-spacing: 1px; text-decoration: underline; color: #b91c1c; }';
+        printHtml += '.intro-box { border: 1px solid #cbd5e1; padding: 8px; font-size: 10px; margin-bottom: 12px; text-align: justify; background: #f8fafc; border-radius: 4px; }';
+        printHtml += '.section-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 1px solid #000; }';
+        printHtml += '.section-header { background: #0f172a; color: #fff; font-weight: 800; padding: 5px 8px; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }';
+        printHtml += '.field-label { font-weight: 700; text-transform: uppercase; font-size: 10px; background: #f1f5f9; padding: 5px 8px; border: 1px solid #cbd5e1; width: 25%; }';
+        printHtml += '.field-value { padding: 5px 8px; border: 1px solid #cbd5e1; font-size: 10px; }';
+        printHtml += '.narrative-box { border: 1px solid #000; padding: 8px; min-height: 60px; margin-bottom: 10px; white-space: pre-wrap; font-size: 10px; background: #fff; }';
+        printHtml += '.pledge-box { border: 1px solid #000; padding: 10px; margin-bottom: 15px; font-size: 10px; line-height: 1.4; background: #fafafa; }';
+        printHtml += '.signature-grid { width: 100%; border-collapse: collapse; margin-top: 30px; }';
+        printHtml += '.signature-cell { width: 50%; text-align: center; vertical-align: bottom; }';
+        printHtml += '.sig-line { border-top: 1px solid #000; width: 80%; margin: 0 auto; padding-top: 3px; font-weight: bold; font-size: 9px; text-transform: uppercase; }';
+        printHtml += '.doc-footer { display: flex; justify-content: space-between; font-family: monospace; font-size: 9px; font-weight: bold; color: #64748b; margin-top: 15px; border-top: 1px solid #cbd5e1; padding-top: 4px; }';
+        printHtml += '</style></head><body>';
+        printHtml += '<table class="header-table"><tr><td class="logo-cell"><img src="' + bisuLogo + '" alt="BISU Logo" onerror="this.onerror=null; this.src=\'images/BISU.webp\';"></td>';
+        printHtml += '<td class="title-cell"><p>Republic of the Philippines</p><h1>BOHOL ISLAND STATE UNIVERSITY</h1><p class="motto">Balance | Integrity | Stewardship | Uprightness</p></td>';
+        printHtml += '<td class="logo-cell"><img src="' + bagongPilipinasLogo + '" style="max-height: 45px; margin-right: 4px;" alt="Bagong Pilipinas" onerror="this.onerror=null; this.src=\'images/BAGONG-PILIPINAS-LOGO-1-1.png\';">';
+        printHtml += '<img src="' + tuvLogo + '" style="max-height: 45px;" alt="TUV Rheinland" onerror="this.onerror=null; this.src=\'public/images/images.webp\';"></td></tr></table>';
+        printHtml += '<div class="form-title">COMPLAINT FORM</div>';
+        printHtml += '<div class="intro-box">The Customer Satisfaction Feedback Complaint Form shall be given to any client who is experiencing dissatisfaction with the services rendered by the unit/office to take necessary actions whenever there is a need to. Please fill out this form with the needed data/information. Rest assured that the data/information gathered will be handled with confidentiality which is in accordance with the <strong>DATA PRIVACY ACT</strong>.</div>';
+        printHtml += '<table class="section-table"><tr><td class="field-label" style="width: 32%;">NAME OF PERSON COMPLAINT OF :</td>';
+        printHtml += '<td class="field-value" style="font-weight: bold; font-size: 11px; color: #b91c1c;">' + escapeHtml(c.person_complained_of || c.details_of_complaint || 'N/A') + '</td></tr></table>';
+        printHtml += '<div class="section-header">DETAILS OF THE COMPLAINANT</div><table class="section-table">';
+        printHtml += '<tr><td class="field-label">Name of Complainant</td><td class="field-value" colspan="3">' + nameDisplay + '</td></tr>';
+        printHtml += '<tr><td class="field-label">Address</td><td class="field-value" colspan="3">' + escapeHtml(c.address || 'N/A') + '</td></tr>';
+        printHtml += '<tr><td class="field-label">Sex</td><td class="field-value">' + escapeHtml(c.sex || 'N/A') + '</td><td class="field-label">Age</td><td class="field-value">' + escapeHtml(c.age || 'N/A') + '</td></tr>';
+        printHtml += '<tr><td class="field-label">Civil Status</td><td class="field-value">' + escapeHtml(c.civil_status || 'N/A') + '</td><td class="field-label">Contact Details</td><td class="field-value">' + escapeHtml(c.contact_details || 'N/A') + '</td></tr></table>';
+        printHtml += '<div class="section-header">COMPLAINT DETAILS</div><table class="section-table">';
+        printHtml += '<tr><td class="field-label">Date of Incident</td><td class="field-value">' + escapeHtml(c.date_of_incident || 'N/A') + '</td><td class="field-label">Time</td><td class="field-value">' + escapeHtml(c.time_of_incident || 'N/A') + '</td></tr>';
+        printHtml += '<tr><td class="field-label">Place of Incident</td><td class="field-value" colspan="3">' + escapeHtml(c.place_of_incident || 'N/A') + '</td></tr>';
+        printHtml += '<tr><td class="field-label">Act/s Complained of</td><td class="field-value" colspan="3" style="font-weight: bold;">' + escapeHtml(c.details_of_complaint || 'N/A') + '</td></tr></table>';
+        printHtml += '<div class="section-header">NARRATIVE REPORT OF COMPLAINT</div><div class="narrative-box">' + escapeHtml(c.narrative_report || 'No narrative report provided.') + '</div>';
+        printHtml += '<div class="section-header">PROOF OF COMPLAINT <span style="font-weight: normal; font-size: 9px;">(Document/s / Evidence/s / Witness/es)</span></div>';
+        printHtml += '<div class="narrative-box" style="min-height: 45px;">' + escapeHtml(c.proof_of_complaint || 'None specified.') + '</div>';
+        printHtml += '<div class="section-header">COMPLAINT OUTCOME <span style="font-weight: normal; font-size: 9px;">(Desired outcome or expected resolution)</span></div>';
+        printHtml += '<div class="narrative-box" style="min-height: 45px;">' + escapeHtml(c.desired_outcome || 'None specified.') + '</div>';
+        printHtml += '<div class="pledge-box"><strong>Legal Pledge:</strong> Upon filling-up this form, I bind myself to stand on the truth of this complaint as a <strong>COMPLAINANT/AGGRIEVED PARTY</strong> on behalf of the public and the institution for legal proceedings may be required as provided by the existing laws.<br><br>';
+        printHtml += '<strong>Terms of Agreement:</strong> I agree that the provided information asked herein will be used by the University for whatever legal purpose it may serve.</div>';
+        printHtml += '<table class="signature-grid"><tr><td class="signature-cell">';
+        printHtml += '<div style="font-weight: bold; text-decoration: underline; text-transform: uppercase; margin-bottom: 2px;">' + escapeHtml(c.signature_name || c.name || 'Anonymous') + '</div>';
+        printHtml += '<div class="sig-line">Signature over Printed Name of the Complainant</div></td><td class="signature-cell">';
+        printHtml += '<div style="font-weight: bold; margin-bottom: 2px;">' + dateStr + '</div><div class="sig-line">(Date)</div></td></tr></table>';
+        printHtml += '<div class="doc-footer"><span>F-AQA-CSF-004 | Rev. 2 | 07/01/24</span><span>Page 1 of 1</span></div>';
+        printHtml += '</body></html>';
 
         if (typeof printWindowOrIframe === 'function') {
             printWindowOrIframe(printHtml);
@@ -4310,8 +4508,6 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             }
         }
     }
-
-    // === Helper Functions ===
 
     function resetFeedbackForm() {
         feedbackForm.reset();
@@ -5122,8 +5318,9 @@ BISU Calape Campus Portal: https://bisu.edu.ph
 
         if (currentUserRole === 'office' && currentOfficeScope) {
             const scopeNorm = currentOfficeScope.toLowerCase().trim();
-            baseFeedbacks = baseFeedbacks.filter(row => (row.office_visited || '').toLowerCase().trim() === scopeNorm);
-            baseComplaints = baseComplaints.filter(row => (row.place_of_incident || '').toLowerCase().trim() === scopeNorm);
+            // Use case-insensitive partial match to handle variations in office names
+            baseFeedbacks = baseFeedbacks.filter(row => (row.office_visited || '').toLowerCase().trim().includes(scopeNorm));
+            baseComplaints = baseComplaints.filter(row => (row.place_of_incident || '').toLowerCase().trim().includes(scopeNorm));
         }
 
         lastFilteredFeedbacks = baseFeedbacks.filter(row => {
@@ -10113,9 +10310,15 @@ BISU Calape Campus Portal: https://bisu.edu.ph
                         officeSelect.value = officeParam;
                     }
 
+                    // Disable office select when specific office is scanned via QR
+                    officeSelect.disabled = true;
+
                     const evt = new Event('change', { bubbles: true });
                     officeSelect.dispatchEvent(evt);
                 }, 100);
+            } else if (officeSelect && !officeParam) {
+                // Enable office select for general feedback (no specific office)
+                officeSelect.disabled = false;
             }
 
             if (qrBanner && qrBannerOfficeName) {

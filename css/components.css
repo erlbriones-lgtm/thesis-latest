@@ -224,3 +224,16 @@ select.cc-select.is-selected {
     border-color: rgba(34, 0, 124, 0.35);
 }
 
+/* ━━━ Disabled Select Styling for QR-scanned offices ━━━ */
+select:disabled {
+    background-color: #f1f5f9;
+    color: #1e293b;
+    cursor: not-allowed;
+    opacity: 0.9;
+}
+
+select:disabled:hover {
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
+}
+

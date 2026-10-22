@@ -164,6 +164,27 @@
         <div class="h-0.5 bg-gradient-to-r from-bisu-red via-bisu-gold to-bisu-blue shrink-0"></div>
 
         <div class="flex-grow space-y-6 overflow-y-auto custom-scrollbar p-5 bg-slate-50/50">
+            <!-- Add New Office Section -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <h4 class="font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2 flex items-center"><i class="fa-solid fa-building text-bisu-gold mr-2"></i> Add New Office</h4>
+                <form id="add-office-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Office Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="new-office-name" required placeholder="e.g., Student Services Office" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-bisu-blue focus:border-bisu-blue block w-full p-3 shadow-sm transition-all duration-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Services (one per line) <span class="text-slate-400 font-normal">(Optional)</span></label>
+                        <textarea id="new-office-services" rows="4" placeholder="e.g.&#10;General Inquiry&#10;Document Processing&#10;Student Support" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-bisu-blue focus:border-bisu-blue block w-full p-3 shadow-sm transition-all duration-200"></textarea>
+                        <p class="text-[11px] text-slate-500 mt-1">If left blank, generic services will be used</p>
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button type="submit" class="flex-1 text-white bg-bisu-blue hover:bg-bisu-blue-dark focus:ring-4 focus:ring-blue-300 font-bold rounded-xl text-sm px-5 py-3 text-center transition-all duration-200 shadow-md cursor-pointer">
+                            Add Office
+                        </button>
+                    </div>
+                </form>
+            </div>
+
             <!-- Create Account Form -->
             <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <h4 class="font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2 flex items-center"><i class="fa-solid fa-user-plus text-bisu-gold mr-2"></i> Add / Reset Office Login</h4>

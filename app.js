@@ -1721,7 +1721,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === Dynamic Form Config ===
     const getDefaultFormConfig = () => ({
-        offices: ["Registrar's Office", "Cashier", "Library", "Clinic", "Guidance Office"],
+        offices: [
+            "Registrar's Office",
+            "Cashier",
+            "Library",
+            "Clinic",
+            "Guidance Office",
+            "MIS Office",
+            "SDS Office",
+            "Administration",
+            "Human Resource Management (HR)",
+            "BAC Office",
+            "Supply and Property Management",
+            "Quality Assurance",
+            "Public Information Officer (PIO)",
+            "Management Information System (MIS)",
+            "Document Control (DCO)",
+            "College Teacher Education (CTE)",
+            "College of Technology and Allied Sciences (CTAS)",
+            "Health and Allied Services Department (HAS)",
+            "Research",
+            "Extension",
+            "Production and Business Affairs",
+            "Culture and Arts",
+            "Admission and Scholarship",
+            "Publication",
+            "Gender and Development (GAD)",
+            "Supreme Student Government (SSG)",
+            "Physical Plant and Facilities",
+            "Motorpool and Services",
+            "Disaster Risk Reduction Management (DRRM)",
+            "Quality Workplace QWO-7S",
+            "PTGEA",
+            "National Service Training Program",
+            "Innovation and Technology Support Office",
+            "Alumni Relations",
+            "Housing and Residential Services",
+            "Instructional Materials Development Office",
+            "International Relations",
+            "Learning Management System",
+            "Office of the Admin"
+        ],
         recipients: ["Campus Quality Assurance & Feedback Head | fredianmherl.masas@bisu.edu.ph"],
         dimensions: JSON.parse(JSON.stringify(defaultDimensions))
     });
@@ -1753,6 +1793,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 normalized.dimensions[lang] = JSON.parse(JSON.stringify(defaultDimensions[lang]));
             }
         });
+
+        // Merge services from database config with default services
+        if (normalized.servicesByOffice && typeof normalized.servicesByOffice === 'object') {
+            Object.assign(servicesByOffice, normalized.servicesByOffice);
+        }
 
         return normalized;
     };
@@ -1789,6 +1834,210 @@ document.addEventListener('DOMContentLoaded', () => {
             "Good Moral Certificate Request",
             "Admission / Testing Support",
             "Career Guidance / Orientation"
+        ],
+        "MIS Office": [
+            "Technical Support",
+            "Network / Internet Connectivity",
+            "Computer System Maintenance",
+            "Software Installation / Updates"
+        ],
+        "SDS Office": [
+            "Document Distribution",
+            "File / Record Management",
+            "Document Retrieval",
+            "Archiving Services"
+        ],
+        "Administration": [
+            "Administrative Inquiry",
+            "Policy / Procedure Clarification",
+            "Official Document Request",
+            "Meeting / Appointment"
+        ],
+        "Human Resource Management (HR)": [
+            "Personnel Inquiry",
+            "Payroll / Salary Concern",
+            "Leave Application",
+            "Benefits Processing"
+        ],
+        "BAC Office": [
+            "Procurement Inquiry",
+            "Bid / Bidding Information",
+            "Contract Processing",
+            "Vendor Registration"
+        ],
+        "Supply and Property Management": [
+            "Property Request",
+            "Supply Requisition",
+            "Equipment Maintenance",
+            "Inventory Management"
+        ],
+        "Quality Assurance": [
+            "Quality Standards Inquiry",
+            "Process Improvement Feedback",
+            "Assessment / Evaluation",
+            "Complaint Resolution"
+        ],
+        "Public Information Officer (PIO)": [
+            "Information Request",
+            "Media / Public Relations",
+            "Announcement Dissemination",
+            "Event Coordination"
+        ],
+        "Management Information System (MIS)": [
+            "System Access Request",
+            "Data Management",
+            "Report Generation",
+            "System Training"
+        ],
+        "Document Control (DCO)": [
+            "Document Control",
+            "Record Management",
+            "Document Retrieval",
+            "Filing / Archiving"
+        ],
+        "College Teacher Education (CTE)": [
+            "Academic Services",
+            "Enrollment / Registration",
+            "Academic Advising",
+            "Student Support"
+        ],
+        "College of Technology and Allied Sciences (CTAS)": [
+            "Technical Training",
+            "Skills Assessment",
+            "Equipment Utilization",
+            "Laboratory Services"
+        ],
+        "Health and Allied Services Department (HAS)": [
+            "Health Services",
+            "Medical Consultation",
+            "Health Education",
+            "Sanitation / Hygiene Support"
+        ],
+        "Research": [
+            "Research Support",
+            "Data Collection",
+            "Research Consultation",
+            "Publication / Dissemination"
+        ],
+        "Extension": [
+            "Community Extension",
+            "Outreach Programs",
+            "Community Development",
+            "Extension Activities"
+        ],
+        "Production and Business Affairs": [
+            "Production Services",
+            "Business Affairs",
+            "Marketing Support",
+            "Industry Linkages"
+        ],
+        "Culture and Arts": [
+            "Cultural Activities",
+            "Arts Programs",
+            "Cultural Events",
+            "Artist Support"
+        ],
+        "Admission and Scholarship": [
+            "Admission Services",
+            "Scholarship Application",
+            "Financial Aid",
+            "Scholarship Inquiry"
+        ],
+        "Publication": [
+            "Publication Services",
+            "Journal Processing",
+            "Document Printing",
+            "Publication Dissemination"
+        ],
+        "Gender and Development (GAD)": [
+            "GAD Programs",
+            "Gender Sensitivity Training",
+            "Women's Support Services",
+            "GAD Compliance"
+        ],
+        "Supreme Student Government (SSG)": [
+            "Student Government Services",
+            "Student Representation",
+            "Student Activities",
+            "Leadership Programs"
+        ],
+        "Physical Plant and Facilities": [
+            "Facility Maintenance",
+            "Infrastructure Support",
+            "Utilities Management",
+            "Campus Development"
+        ],
+        "Motorpool and Services": [
+            "Vehicle Services",
+            "Transportation Support",
+            "Vehicle Maintenance",
+            "Motorpool Management"
+        ],
+        "Disaster Risk Reduction Management (DRRM)": [
+            "DRRM Programs",
+            "Disaster Preparedness",
+            "Emergency Response",
+            "Safety Training"
+        ],
+        "Quality Workplace QWO-7S": [
+            "Quality Workplace Programs",
+            "7S Implementation",
+            "Quality Standards",
+            "Workplace Improvement"
+        ],
+        "PTGEA": [
+            "PTGEA Programs",
+            "Performance Evaluation",
+            "Quality Assurance",
+            "Incentive Programs"
+        ],
+        "National Service Training Program": [
+            "NSTP Programs",
+            "Community Service",
+            "NSTP Certificate",
+            "ROTC Coordination"
+        ],
+        "Innovation and Technology Support Office": [
+            "Innovation Support",
+            "Technology Consultation",
+            "Digital Services",
+            "Technical Solutions"
+        ],
+        "Alumni Relations": [
+            "Alumni Services",
+            "Alumni Events",
+            "Alumni Records",
+            "Alumni Networking"
+        ],
+        "Housing and Residential Services": [
+            "Housing Services",
+            "Residential Support",
+            "Dormitory Management",
+            "Accommodation"
+        ],
+        "Instructional Materials Development Office": [
+            "Instructional Materials",
+            "Learning Resources",
+            "Curriculum Support",
+            "Material Development"
+        ],
+        "International Relations": [
+            "International Programs",
+            "Student Exchange",
+            "Partnership Programs",
+            "International Cooperation"
+        ],
+        "Learning Management System": [
+            "LMS Support",
+            "Online Learning",
+            "Course Management",
+            "E-Learning Services"
+        ],
+        "Office of the Admin": [
+            "Administrative Services",
+            "Executive Support",
+            "Policy Implementation",
+            "General Administration"
         ]
     };
 
@@ -1960,7 +2209,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const officeSelect = document.getElementById('office-visited');
         const reportCardSelect = document.getElementById('office-report-card-select');
         const compOfficeHeader = document.getElementById('comp-office-header');
-        
+        const accOfficeSelect = document.getElementById('acc-office');
+
         const populateSelect = (el) => {
             if(!el) return;
             const originalVal = el.value;
@@ -1969,7 +2219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (el.id === 'acc-office') defaultText = 'Select Target Office';
             else if (el.id === 'office-report-card-select') defaultText = 'Select Office for Card';
             else if (el.id === 'comp-office-header') defaultText = 'Select Office Concerned';
-            
+
             el.innerHTML = `<option value="">${defaultText}</option>`;
             formConfig.offices.forEach(office => {
                 el.innerHTML += `<option value="${office}">${office}</option>`;
@@ -1979,8 +2229,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         populateSelect(officeSelect);
         populateSelect(reportCardSelect);
-        populateSelect(accOfficeSelect);
+        if (accOfficeSelect) populateSelect(accOfficeSelect);
         populateSelect(compOfficeHeader);
+
+        // Update QR office select if it exists
+        const qrOfficeSelect = document.getElementById('qr-office-select');
+        if (qrOfficeSelect && currentUserRole !== 'office') {
+            const currentVal = qrOfficeSelect.value;
+            qrOfficeSelect.innerHTML = '<option value="">All Offices (General Feedback)</option>';
+            if (typeof formConfig !== 'undefined' && Array.isArray(formConfig.offices)) {
+                formConfig.offices.forEach(off => {
+                    qrOfficeSelect.innerHTML += `<option value="${off}">${off}</option>`;
+                });
+            }
+            qrOfficeSelect.value = currentVal;
+        }
 
         if (officeSelect) {
             updateServiceOptions(officeSelect.value);
@@ -2795,13 +3058,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function openAdminLoginModal() {
         if (typeof dismissCookiePrompts === 'function') dismissCookiePrompts();
-        adminLoginModal.classList.remove('hidden');
-        adminLoginModal.classList.add('flex');
-        document.body.style.overflow = 'hidden';
-        setTimeout(() => loginEmailInput.focus(), 100);
+        if (adminLoginModal) {
+            adminLoginModal.classList.remove('hidden');
+            adminLoginModal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => loginEmailInput && loginEmailInput.focus(), 100);
+        }
     }
 
-    adminLoginBtn.addEventListener('click', openAdminLoginModal);
+    if (adminLoginBtn) {
+        adminLoginBtn.addEventListener('click', openAdminLoginModal);
+    } else {
+        console.warn('Admin login button not found in DOM');
+    }
 
     // Mobile admin login button
     if(adminLoginBtnMobile) {
@@ -3186,7 +3455,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (accOfficeSelect && formConfig && formConfig.offices) {
                 const currentVal = accOfficeSelect.value;
-                accOfficeSelect.innerHTML = '<option value="">Select Target Office</option>';
+                accOfficeSelect.innerHTML = '<option value="">Select Office</option>';
                 formConfig.offices.forEach(office => {
                     accOfficeSelect.innerHTML += `<option value="${escapeHtml(office)}">${escapeHtml(office)}</option>`;
                 });
@@ -3406,6 +3675,18 @@ document.addEventListener('DOMContentLoaded', () => {
             submitAccBtn.disabled = false;
             submitAccBtn.innerHTML = 'Save Credentials';
         });
+    }
+
+    // Re-populate office dropdown after adding a new office
+    function updateOfficeDropdowns() {
+        if (accOfficeSelect && formConfig && formConfig.offices) {
+            const currentVal = accOfficeSelect.value;
+            accOfficeSelect.innerHTML = '<option value="">Select Office</option>';
+            formConfig.offices.forEach(office => {
+                accOfficeSelect.innerHTML += `<option value="${escapeHtml(office)}">${escapeHtml(office)}</option>`;
+            });
+            accOfficeSelect.value = currentVal;
+        }
     }
 
     window.deleteOfficeAccount = async function(id, email) {
@@ -9390,6 +9671,112 @@ BISU Calape Campus Portal: https://bisu.edu.ph
         clearComplaintBtn.addEventListener('click', () => {
             complaintForm.reset();
             showToast('Form cleared.', 'info');
+        });
+    }
+
+    // Re-populate office dropdowns after adding a new office
+    function updateOfficeDropdowns() {
+        if (accOfficeSelect && formConfig && formConfig.offices) {
+            const currentVal = accOfficeSelect.value;
+            accOfficeSelect.innerHTML = '<option value="">Select Office</option>';
+            formConfig.offices.forEach(office => {
+                accOfficeSelect.innerHTML += `<option value="${escapeHtml(office)}">${escapeHtml(office)}</option>`;
+            });
+            accOfficeSelect.value = currentVal;
+        }
+    }
+
+    // Add New Office Form (inside Office Accounts modal)
+    const addOfficeForm = document.getElementById('add-office-form');
+
+    if (addOfficeForm) {
+        addOfficeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const officeName = document.getElementById('new-office-name').value.trim();
+            const servicesText = document.getElementById('new-office-services').value.trim();
+
+            if (!officeName) {
+                showToast('Please enter an office name.', 'error');
+                return;
+            }
+
+            // Check if office already exists
+            if (formConfig.offices.includes(officeName)) {
+                showToast('Office already exists.', 'error');
+                return;
+            }
+
+            // Parse services
+            let services = [];
+            if (servicesText) {
+                services = servicesText.split('\n').map(s => s.trim()).filter(s => s);
+            } else {
+                // Use generic services
+                services = [
+                    "General Inquiry / Customer Service",
+                    "Document Submission / Receiving",
+                    "Signing of Clearance",
+                    "Form / Document Application"
+                ];
+            }
+
+            // Add to form config
+            formConfig.offices.push(officeName);
+
+            // Add services for this office
+            servicesByOffice[officeName] = services;
+
+            // Update form config to include services
+            formConfig.servicesByOffice = servicesByOffice;
+
+            // Save to localStorage
+            localStorage.setItem('bisuFormConfig', JSON.stringify(formConfig));
+
+            // Save to database
+            try {
+                const client = await getSupabaseClient();
+                if (client) {
+                    const { error } = await client
+                        .from(SETTINGS_TABLE)
+                        .upsert({
+                            id: 'global_config',
+                            config: formConfig,
+                            updated_at: new Date().toISOString()
+                        });
+
+                    if (error) throw error;
+                }
+            } catch (err) {
+                console.error('Failed to save office to database:', err);
+                showToast('Office added locally but failed to sync to database.', 'warning');
+            }
+
+            // Reload form config from localStorage to ensure it's up to date
+            formConfig = normalizeFormConfig(JSON.parse(localStorage.getItem('bisuFormConfig')) || getDefaultFormConfig());
+
+            // Re-render all office dropdowns
+            renderDynamicFields();
+
+            // Update QR office select
+            const qrOfficeSelect = document.getElementById('qr-office-select');
+            if (qrOfficeSelect) {
+                const currentVal = qrOfficeSelect.value;
+                qrOfficeSelect.innerHTML = '<option value="">All Offices (General Feedback)</option>';
+                if (typeof formConfig !== 'undefined' && Array.isArray(formConfig.offices)) {
+                    formConfig.offices.forEach(off => {
+                        qrOfficeSelect.innerHTML += `<option value="${off}">${off}</option>`;
+                    });
+                }
+                qrOfficeSelect.value = currentVal;
+            }
+
+            // Update office account dropdown
+            updateOfficeDropdowns();
+
+            // Reset form
+            addOfficeForm.reset();
+
+            showToast(`Office "${officeName}" added successfully!`, 'success');
         });
     }
 

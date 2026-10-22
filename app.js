@@ -5608,7 +5608,7 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             if (!row.created_at) return true;
             const d = new Date(row.created_at);
             if (isNaN(d.getTime())) return true;
-            
+
             const rYear = d.getFullYear().toString();
             const rMonth = String(d.getMonth() + 1).padStart(2, '0');
             const rDay = String(d.getDate()).padStart(2, '0');

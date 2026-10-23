@@ -4276,6 +4276,22 @@ BISU Calape Campus Portal: https://bisu.edu.ph
         const regionSelect = document.getElementById('client-region');
         const regionValue = regionSelect ? (regionSelect.value || null) : null;
 
+        // Rate limiting: Check if user submitted recently
+        const RATE_LIMIT_MINUTES = 30; // 30 minutes between submissions
+        const lastSubmission = localStorage.getItem('lastFeedbackSubmission');
+        if (lastSubmission) {
+            const timeSinceLastSubmission = Date.now() - parseInt(lastSubmission);
+            const timeRemaining = (RATE_LIMIT_MINUTES * 60 * 1000) - timeSinceLastSubmission;
+            
+            if (timeRemaining > 0) {
+                const minutesRemaining = Math.ceil(timeRemaining / (60 * 1000));
+                showToast(`Please wait ${minutesRemaining} minute(s) before submitting another feedback.`, 'warning');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span class="text-lg">Submit My Feedback</span><i class="fa-solid fa-paper-plane group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>';
+                return;
+            }
+        }
+
         // User's choice of time and day
         const dateVisitedVal = (document.getElementById('date-visited')?.value || '').trim();
         const timeVisitedVal = (document.getElementById('time-visited')?.value || '').trim();
@@ -4327,9 +4343,19 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             if (navigator.onLine && client) {
                 const result = await insertEvaluations(client, [payload]);
                 if (result && result.error) throw result.error;
+                
+                // Record submission timestamp for rate limiting
+                try {
+                    localStorage.setItem('lastFeedbackSubmission', Date.now().toString());
+                } catch(e) {}
+                
                 showFeedbackThankYou(payload, false);
             } else {
                 saveOffline('pendingFeedbacks', payload);
+                // Record submission timestamp for rate limiting even when offline
+                try {
+                    localStorage.setItem('lastFeedbackSubmission', Date.now().toString());
+                } catch(e) {}
                 showFeedbackThankYou(payload, true);
             }
         } catch (error) {
@@ -4437,7 +4463,28 @@ BISU Calape Campus Portal: https://bisu.edu.ph
         try {
             const client = await getSupabaseClient();
             if (navigator.onLine && client) {
-                const { error } = await client.from(COMPLAIN_TABLE).insert([payload]);
+                let { error } = await client.from(COMPLAIN_TABLE).insert([payload]);
+                if (error) {
+                    const errMsg = (error.message || '').toLowerCase();
+                    // If error is due to missing columns or schema mismatch, try sanitizing payload
+                    if (error.code === '42703' || error.code === 'PGRST204' || errMsg.includes('column') || errMsg.includes('schema cache')) {
+                        console.warn('Database schema mismatch on complaint insert. Attempting sanitized insert:', error.message);
+                        const sanitized = { ...payload };
+                        const colMatch = errMsg.match(/column\s+'?([a-zA-Z0-9_]+)'?/i) || errMsg.match(/'([a-zA-Z0-9_]+)'\s+column/i);
+                        if (colMatch && colMatch[1]) {
+                            delete sanitized[colMatch[1]];
+                        } else {
+                            // Strip extended columns that might not exist in an older schema
+                            delete sanitized.attachment;
+                            delete sanitized.proof_of_complaint;
+                            delete sanitized.signature_name;
+                            delete sanitized.office_of;
+                            delete sanitized.person_complained_of;
+                        }
+                        const retryRes = await client.from(COMPLAIN_TABLE).insert([sanitized]);
+                        error = retryRes.error;
+                    }
+                }
                 if (error) throw error;
                 handleSuccessAndConfirm(false);
             } else {
@@ -4445,7 +4492,7 @@ BISU Calape Campus Portal: https://bisu.edu.ph
                 handleSuccessAndConfirm(true);
             }
         } catch (error) {
-            console.error('Complaint insert failed:', error);
+            console.error('Complaint insert failed, falling back to local offline storage:', error);
             saveOffline('pendingComplaints', payload);
             handleSuccessAndConfirm(true);
         } finally {
@@ -4867,6 +4914,10 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             const result = await insertEvaluations(client, pFeedbacks);
             if (result && !result.error) {
                 localStorage.removeItem('pendingFeedbacks');
+                // Record submission timestamp for rate limiting
+                try {
+                    localStorage.setItem('lastFeedbackSubmission', Date.now().toString());
+                } catch(e) {}
                 showToast('Offline feedbacks synced!', 'success');
                 if (typeof fetchAdminData === 'function' && document.getElementById('admin-dashboard') && !document.getElementById('admin-dashboard').classList.contains('hidden')) {
                     fetchAdminData();
@@ -4880,7 +4931,24 @@ BISU Calape Campus Portal: https://bisu.edu.ph
 
         const pComplaints = JSON.parse(localStorage.getItem('pendingComplaints')) || [];
         if (pComplaints.length > 0) {
-            const { error } = await client.from(COMPLAIN_TABLE).insert(pComplaints);
+            let { error } = await client.from(COMPLAIN_TABLE).insert(pComplaints);
+            if (error) {
+                const errMsg = (error.message || '').toLowerCase();
+                if (error.code === '42703' || error.code === 'PGRST204' || errMsg.includes('column') || errMsg.includes('schema cache')) {
+                    console.warn('Database schema mismatch on offline complaints sync. Attempting sanitized insert:', error.message);
+                    const sanitizedList = pComplaints.map(item => {
+                        const sanitized = { ...item };
+                        delete sanitized.attachment;
+                        delete sanitized.proof_of_complaint;
+                        delete sanitized.signature_name;
+                        delete sanitized.office_of;
+                        delete sanitized.person_complained_of;
+                        return sanitized;
+                    });
+                    const retryRes = await client.from(COMPLAIN_TABLE).insert(sanitizedList);
+                    error = retryRes.error;
+                }
+            }
             if (!error) {
                 localStorage.removeItem('pendingComplaints');
                 showToast('Offline complaints synced!', 'success');
@@ -5601,7 +5669,12 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             const scopeNorm = currentOfficeScope.toLowerCase().trim();
             // Use case-insensitive partial match to handle variations in office names
             baseFeedbacks = baseFeedbacks.filter(row => (row.office_visited || '').toLowerCase().trim().includes(scopeNorm));
-            baseComplaints = baseComplaints.filter(row => (row.place_of_incident || '').toLowerCase().trim().includes(scopeNorm));
+            // Check both office_of and place_of_incident for complaints
+            baseComplaints = baseComplaints.filter(row => {
+                const officeOf = (row.office_of || '').toLowerCase().trim();
+                const placeOfIncident = (row.place_of_incident || '').toLowerCase().trim();
+                return officeOf.includes(scopeNorm) || placeOfIncident.includes(scopeNorm);
+            });
         }
 
         lastFilteredFeedbacks = baseFeedbacks.filter(row => {

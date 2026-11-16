@@ -3228,7 +3228,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const { error: otpErr } = await client.auth.signInWithOtp({
                         email: cleanEmail,
                         options: {
-                            shouldCreateUser: false
+                            shouldCreateUser: true
                         }
                     });
                     if (!otpErr) {

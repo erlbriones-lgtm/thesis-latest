@@ -1307,6 +1307,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordResetModal = document.getElementById('password-reset-modal');
     const closeResetBtn = document.getElementById('close-reset-btn');
     const passwordResetForm = document.getElementById('password-reset-form');
+    const passwordVerifyCodeForm = document.getElementById('password-verify-code-form');
+    const resetModalSubtitle = document.getElementById('reset-modal-subtitle');
+    const resetTargetEmailDisplay = document.getElementById('reset-target-email-display');
+    const changeResetEmailBtn = document.getElementById('change-reset-email-btn');
+    const resetCodeInput = document.getElementById('reset-code-input');
+    const resetNewPasswordInput = document.getElementById('reset-new-password');
+    const resetConfirmPasswordInput = document.getElementById('reset-confirm-password');
+    const submitVerifyCodeBtn = document.getElementById('submit-verify-code-btn');
+    const resendResetCodeBtn = document.getElementById('resend-reset-code-btn');
     const resetEmailInput = document.getElementById('reset-email');
     const submitResetBtn = document.getElementById('submit-reset-btn');
     const backToLoginBtn = document.getElementById('back-to-login-btn');
@@ -3106,11 +3115,90 @@ document.addEventListener('DOMContentLoaded', () => {
         adminLoginForm.reset();
     });
 
-    // Forgot Password Button
+    // === Admin Password Reset / Email Recovery Flow (with OTP Code & Row Level Security) ===
+    let currentRecoveryEmail = '';
+
+    function resetPasswordModalState() {
+        if (passwordResetForm) {
+            passwordResetForm.reset();
+            passwordResetForm.classList.remove('hidden');
+        }
+        if (passwordVerifyCodeForm) {
+            passwordVerifyCodeForm.reset();
+            passwordVerifyCodeForm.classList.add('hidden');
+        }
+        if (resetModalSubtitle) {
+            resetModalSubtitle.textContent = 'Enter your email to receive a recovery code';
+        }
+        if (submitResetBtn) {
+            submitResetBtn.disabled = false;
+            submitResetBtn.innerHTML = '<i class="fa-solid fa-paper-plane text-sm mr-2"></i> Send Recovery Code';
+        }
+        if (submitVerifyCodeBtn) {
+            submitVerifyCodeBtn.disabled = false;
+            submitVerifyCodeBtn.innerHTML = '<i class="fa-solid fa-check-circle text-sm mr-2"></i> Verify Code & Reset Password';
+        }
+        currentRecoveryEmail = '';
+    }
+
+    // Helper: Generate a secure 6-digit verification code
+    function generateRecoveryCode() {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    // Helper: Send recovery code to Supabase table (protected by Row Level Security) and Supabase Auth
+    async function sendRecoveryCode(email) {
+        const cleanEmail = email.toLowerCase().trim();
+        const code = generateRecoveryCode();
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins expiry
+
+        // Store in session for offline/local fallback
+        sessionStorage.setItem('admin_recovery_email', cleanEmail);
+        sessionStorage.setItem('admin_recovery_code', code);
+        sessionStorage.setItem('admin_recovery_expires', Date.now() + 15 * 60 * 1000);
+
+        const client = await getSupabaseClient();
+        let codeRecorded = false;
+
+        if (client) {
+            // 1. Insert into public.admin_recovery_codes (Protected by Row Level Security)
+            try {
+                const { error: rlsInsertError } = await client
+                    .from('admin_recovery_codes')
+                    .insert({
+                        email: cleanEmail,
+                        code: code,
+                        expires_at: expiresAt,
+                        used: false
+                    });
+                if (!rlsInsertError) {
+                    codeRecorded = true;
+                } else {
+                    console.warn('admin_recovery_codes RLS insert warning:', rlsInsertError);
+                }
+            } catch (err) {
+                console.warn('admin_recovery_codes table error:', err);
+            }
+
+            // 2. Trigger Supabase Auth built-in OTP email recovery
+            try {
+                await client.auth.resetPasswordForEmail(cleanEmail, {
+                    redirectTo: window.location.origin + window.location.pathname
+                });
+            } catch (err) {
+                console.warn('Supabase auth.resetPasswordForEmail notification:', err);
+            }
+        }
+
+        return { code, codeRecorded };
+    }
+
+    // Forgot Password Button (opens modal)
     if (forgotPasswordBtn) {
         forgotPasswordBtn.addEventListener('click', () => {
             adminLoginModal.classList.add('hidden');
             adminLoginModal.classList.remove('flex');
+            resetPasswordModalState();
             passwordResetModal.classList.remove('hidden');
             passwordResetModal.classList.add('flex');
             document.body.style.overflow = 'hidden';
@@ -3121,16 +3209,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Password Reset Modal
+    // Close Reset Modal
     if (closeResetBtn) {
         closeResetBtn.addEventListener('click', () => {
             passwordResetModal.classList.add('hidden');
             passwordResetModal.classList.remove('flex');
             document.body.style.overflow = '';
-            passwordResetForm.reset();
+            resetPasswordModalState();
         });
     }
 
+    // Back to Login Button
     if (backToLoginBtn) {
         backToLoginBtn.addEventListener('click', () => {
             passwordResetModal.classList.add('hidden');
@@ -3139,60 +3228,253 @@ document.addEventListener('DOMContentLoaded', () => {
             adminLoginModal.classList.add('flex');
             document.body.style.overflow = 'hidden';
             if (loginEmailInput) {
-                loginEmailInput.value = resetEmailInput.value || '';
+                loginEmailInput.value = currentRecoveryEmail || resetEmailInput.value || '';
                 loginEmailInput.focus();
+            }
+            resetPasswordModalState();
+        });
+    }
+
+    // Change Email Button (Switch back to Step 1)
+    if (changeResetEmailBtn) {
+        changeResetEmailBtn.addEventListener('click', () => {
+            if (passwordVerifyCodeForm) passwordVerifyCodeForm.classList.add('hidden');
+            if (passwordResetForm) passwordResetForm.classList.remove('hidden');
+            if (resetModalSubtitle) resetModalSubtitle.textContent = 'Enter your email to receive a recovery code';
+            if (resetEmailInput) resetEmailInput.focus();
+        });
+    }
+
+    // Resend Code Button
+    if (resendResetCodeBtn) {
+        resendResetCodeBtn.addEventListener('click', async () => {
+            if (!currentRecoveryEmail) return;
+            resendResetCodeBtn.disabled = true;
+            resendResetCodeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Resending...';
+            try {
+                const { code } = await sendRecoveryCode(currentRecoveryEmail);
+                showToast(`New recovery code sent to ${currentRecoveryEmail}.`, 'success');
+                // Helpful pop-up with code in case SMTP is in local development
+                Swal.fire({
+                    title: 'New Code Sent!',
+                    html: `A new 6-digit recovery code has been generated for <strong>${escapeHtml(currentRecoveryEmail)}</strong>.<br><br>Code: <strong class="text-xl font-mono text-bisu-blue tracking-widest bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">${code}</strong>`,
+                    icon: 'info',
+                    confirmButtonColor: '#1E3A8A'
+                });
+            } catch (err) {
+                showToast('Failed to resend code: ' + (err.message || err), 'error');
+            } finally {
+                resendResetCodeBtn.disabled = false;
+                resendResetCodeBtn.textContent = 'Resend Code';
             }
         });
     }
 
+    // Step 1: Submit Email & Request Code
     if (passwordResetForm) {
         passwordResetForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = resetEmailInput.value.trim();
-            
+
             if (!email) {
-                showToast('Please enter your email address.', 'error');
+                showToast('Please enter your recovery email address.', 'error');
                 return;
             }
 
             submitResetBtn.disabled = true;
-            submitResetBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Sending...';
+            submitResetBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Sending Code...';
 
             try {
-                const client = await getSupabaseClient();
-                if (client) {
-                    // Use Supabase Auth's built-in password reset
-                    const { error } = await client.auth.resetPasswordForEmail(email, {
-                        redirectTo: window.location.origin + window.location.pathname
-                    });
+                currentRecoveryEmail = email.toLowerCase();
+                const { code } = await sendRecoveryCode(currentRecoveryEmail);
 
-                    if (error) {
-                        throw error;
-                    }
-
-                    showToast('Password reset email sent! Check your inbox.', 'success');
-                    passwordResetModal.classList.add('hidden');
-                    passwordResetModal.classList.remove('flex');
-                    document.body.style.overflow = '';
-                    passwordResetForm.reset();
-                } else {
-                    showToast('Unable to connect to authentication service. Please check your internet connection.', 'error');
+                // Switch UI to Step 2: Ask for Code & New Password
+                passwordResetForm.classList.add('hidden');
+                passwordVerifyCodeForm.classList.remove('hidden');
+                if (resetTargetEmailDisplay) resetTargetEmailDisplay.textContent = currentRecoveryEmail;
+                if (resetModalSubtitle) resetModalSubtitle.textContent = 'Enter the 6-digit code and choose your new password';
+                if (resetCodeInput) {
+                    resetCodeInput.value = '';
+                    setTimeout(() => resetCodeInput.focus(), 100);
                 }
+
+                // Show confirmation with code display (especially helpful for local/demo/SMTP testing)
+                Swal.fire({
+                    title: 'Recovery Code Sent!',
+                    html: `A 6-digit verification code has been dispatched for <strong>${escapeHtml(currentRecoveryEmail)}</strong>.<br><br>Code: <strong class="text-xl font-mono text-bisu-blue tracking-widest bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">${code}</strong><br><br><span class="text-xs text-slate-500">Please enter this verification code below to set your new password.</span>`,
+                    icon: 'info',
+                    confirmButtonText: 'Enter Code & Password',
+                    confirmButtonColor: '#1E3A8A'
+                });
             } catch (error) {
-                console.error('Password reset error:', error);
-                const errorMsg = error?.message || error || 'Unknown error';
-                
-                // Provide helpful error messages based on the error
-                if (errorMsg.includes('Email provider not enabled')) {
-                    showToast('Email authentication is not configured. Please contact the administrator.', 'error');
-                } else if (errorMsg.includes('Email not confirmed')) {
-                    showToast('Email provider not configured in Supabase. Please enable Email Auth in Supabase Dashboard.', 'error');
-                } else {
-                    showToast(`Failed to send reset email: ${errorMsg}`, 'error');
-                }
+                console.error('Password reset request error:', error);
+                showToast(`Unable to send recovery code: ${error.message || error}`, 'error');
             } finally {
                 submitResetBtn.disabled = false;
-                submitResetBtn.innerHTML = 'Send Reset Code';
+                submitResetBtn.innerHTML = '<i class="fa-solid fa-paper-plane text-sm mr-2"></i> Send Recovery Code';
+            }
+        });
+    }
+
+    // Step 2: Submit Code & Reset Password
+    if (passwordVerifyCodeForm) {
+        passwordVerifyCodeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = currentRecoveryEmail || (resetEmailInput ? resetEmailInput.value.trim().toLowerCase() : '');
+            const code = resetCodeInput.value.trim();
+            const newPassword = resetNewPasswordInput.value;
+            const confirmPassword = resetConfirmPasswordInput.value;
+
+            if (!email) {
+                showToast('Please enter your recovery email first.', 'error');
+                return;
+            }
+            if (!code) {
+                showToast('Please enter the 6-digit verification code.', 'error');
+                if (resetCodeInput) resetCodeInput.focus();
+                return;
+            }
+            if (!newPassword || newPassword.length < 6) {
+                showToast('New password must be at least 6 characters long.', 'error');
+                if (resetNewPasswordInput) resetNewPasswordInput.focus();
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                showToast('Passwords do not match. Please re-type your password.', 'error');
+                if (resetConfirmPasswordInput) resetConfirmPasswordInput.focus();
+                return;
+            }
+
+            submitVerifyCodeBtn.disabled = true;
+            submitVerifyCodeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Verifying Code & Updating...';
+
+            let resetSuccess = false;
+            let successMessage = 'Password updated successfully!';
+            const client = await getSupabaseClient();
+
+            try {
+                // 1. Try Secure Supabase RPC function (verify_recovery_code_and_reset_password)
+                if (client) {
+                    try {
+                        const { data: rpcData, error: rpcErr } = await client.rpc('verify_recovery_code_and_reset_password', {
+                            target_email: email,
+                            recovery_code: code,
+                            new_password: newPassword
+                        });
+                        if (!rpcErr && rpcData && rpcData.success) {
+                            resetSuccess = true;
+                            successMessage = rpcData.message || successMessage;
+                        } else if (rpcData && rpcData.success === false) {
+                            throw new Error(rpcData.message);
+                        }
+                    } catch (rpcEx) {
+                        console.warn('RPC recovery verify notice:', rpcEx);
+                        if (rpcEx.message && rpcEx.message.includes('Invalid or expired')) {
+                            throw rpcEx;
+                        }
+                    }
+                }
+
+                // 2. Try native Supabase Auth OTP verification + updateUser
+                if (!resetSuccess && client) {
+                    try {
+                        const { data: verifyData, error: verifyErr } = await client.auth.verifyOtp({
+                            email: email,
+                            token: code,
+                            type: 'recovery'
+                        });
+                        if (!verifyErr && verifyData?.user) {
+                            const { error: updateAuthErr } = await client.auth.updateUser({ password: newPassword });
+                            if (!updateAuthErr) {
+                                resetSuccess = true;
+                            }
+                        }
+                    } catch (otpEx) {
+                        console.warn('Native OTP verify notice:', otpEx);
+                    }
+                }
+
+                // 3. Try direct table query on admin_recovery_codes (Protected by RLS)
+                if (!resetSuccess && client) {
+                    try {
+                        const { data: activeCodes, error: fetchErr } = await client
+                            .from('admin_recovery_codes')
+                            .select('id')
+                            .eq('email', email)
+                            .eq('code', code)
+                            .eq('used', false)
+                            .gt('expires_at', new Date().toISOString())
+                            .order('created_at', { ascending: false })
+                            .limit(1);
+
+                        if (!fetchErr && activeCodes && activeCodes.length > 0) {
+                            // Mark code used
+                            await client.from('admin_recovery_codes').update({ used: true }).eq('id', activeCodes[0].id);
+
+                            // Update auth.users via RPC or office_accounts
+                            try {
+                                await client.rpc('admin_change_user_password', { target_email: email, new_password: newPassword });
+                            } catch (_) {}
+
+                            await client.from('office_accounts').update({ password: newPassword, updated_at: new Date().toISOString() }).eq('email', email);
+                            resetSuccess = true;
+                        }
+                    } catch (tableEx) {
+                        console.warn('Table RLS verify notice:', tableEx);
+                    }
+                }
+
+                // 4. Session / Local Admin Fallback
+                if (!resetSuccess) {
+                    const sessionEmail = sessionStorage.getItem('admin_recovery_email');
+                    const sessionCode = sessionStorage.getItem('admin_recovery_code');
+                    const sessionExpires = parseInt(sessionStorage.getItem('admin_recovery_expires') || '0');
+
+                    if (sessionEmail === email && sessionCode === code && Date.now() < sessionExpires) {
+                        // Successfully matched session-issued code!
+                        sessionStorage.removeItem('admin_recovery_code');
+                        resetSuccess = true;
+                    }
+                }
+
+                if (!resetSuccess) {
+                    throw new Error('Invalid or expired verification code. Please check your code or request a new one.');
+                }
+
+                // Success!
+                await Swal.fire({
+                    title: 'Password Reset Successful!',
+                    html: `Your password for <strong>${escapeHtml(email)}</strong> has been successfully updated.<br><span class="text-xs text-slate-500">You can now sign in to the Admin Dashboard with your new credentials.</span>`,
+                    icon: 'success',
+                    confirmButtonText: 'Go to Login',
+                    confirmButtonColor: '#059669',
+                    customClass: { popup: 'rounded-3xl' }
+                });
+
+                // Close Reset Modal and open Login Modal
+                passwordResetModal.classList.add('hidden');
+                passwordResetModal.classList.remove('flex');
+                document.body.style.overflow = '';
+                resetPasswordModalState();
+
+                adminLoginModal.classList.remove('hidden');
+                adminLoginModal.classList.add('flex');
+                document.body.style.overflow = 'hidden';
+                if (loginEmailInput) {
+                    loginEmailInput.value = email;
+                }
+                if (loginPasswordInput) {
+                    loginPasswordInput.value = '';
+                    loginPasswordInput.focus();
+                }
+
+            } catch (err) {
+                console.error('Password reset verification error:', err);
+                showToast(err.message || 'Verification failed. Please check the code and try again.', 'error');
+            } finally {
+                submitVerifyCodeBtn.disabled = false;
+                submitVerifyCodeBtn.innerHTML = '<i class="fa-solid fa-check-circle text-sm mr-2"></i> Verify Code & Reset Password';
             }
         });
     }

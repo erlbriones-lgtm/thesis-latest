@@ -29,26 +29,99 @@
 
 <!-- Password Reset Modal (Overlay) -->
 <div id="password-reset-modal" class="fixed inset-0 z-[106] hidden items-center justify-center bg-slate-900 bg-opacity-50 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 sm:p-6 m-4 animate-pop-in">
-        <div class="flex items-center justify-between mb-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-7 m-4 animate-pop-in">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
             <div>
-                <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-key text-bisu-blue mr-2"></i> Reset Password</h2>
-                <p class="text-xs text-slate-500 font-medium mt-0.5">Enter your email to receive a reset code</p>
+                <h2 class="text-xl font-bold text-slate-900 flex items-center">
+                    <i class="fa-solid fa-shield-halved text-bisu-blue mr-2.5"></i> Admin Password Recovery
+                </h2>
+                <p id="reset-modal-subtitle" class="text-xs text-slate-500 font-medium mt-0.5">Enter your email to receive a recovery code</p>
             </div>
-            <button type="button" id="close-reset-btn" class="text-slate-400 hover:text-slate-600 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <button type="button" id="close-reset-btn" class="text-slate-400 hover:text-slate-600 transition p-1 cursor-pointer">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
         </div>
+
+        <!-- Step 1: Request Recovery Code -->
         <form id="password-reset-form" class="space-y-4">
             <div>
-                <label class="block mb-1 text-sm font-semibold text-slate-700">Email Address</label>
-                <input type="email" id="reset-email" required placeholder="admin@bisu.edu.ph" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-bisu-blue focus:border-bisu-blue block w-full p-3 shadow-sm transition-all duration-200">
+                <label class="block mb-1 text-xs font-bold text-slate-700 uppercase tracking-wider">Admin Recovery Email</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-envelope text-xs"></i>
+                    </div>
+                    <input type="email" id="reset-email" required placeholder="admin@bisu.edu.ph" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-bisu-blue focus:border-bisu-blue block w-full pl-10 pr-3.5 py-3 shadow-2xs font-medium transition">
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
+                    <i class="fa-solid fa-lock text-[10px]"></i> Protected with Supabase Row Level Security (RLS)
+                </p>
             </div>
-            <button type="submit" id="submit-reset-btn" class="w-full text-white bg-bisu-blue hover:bg-bisu-blue-dark focus:ring-4 focus:ring-blue-300 font-bold rounded-xl text-lg px-5 py-3 text-center transition-all duration-200 shadow-md cursor-pointer">
-                Send Reset Code
+
+            <button type="submit" id="submit-reset-btn" class="w-full text-white bg-bisu-blue hover:bg-bisu-blue-dark focus:ring-4 focus:ring-blue-200 font-bold rounded-xl text-base px-5 py-3 text-center transition-all duration-200 shadow-md cursor-pointer flex items-center justify-center gap-2">
+                <i class="fa-solid fa-paper-plane text-sm"></i> Send Recovery Code
             </button>
         </form>
-        <div class="mt-4 pt-4 border-t border-slate-200">
-            <button type="button" id="back-to-login-btn" class="w-full text-slate-600 hover:text-slate-800 font-semibold text-sm py-2 transition cursor-pointer">
-                <i class="fa-solid fa-arrow-left mr-2"></i> Back to Login
+
+        <!-- Step 2: Ask for Code & New Password -->
+        <form id="password-verify-code-form" class="space-y-4 hidden">
+            <!-- Email Confirmation Callout -->
+            <div class="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-3 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2 truncate pr-2">
+                    <i class="fa-solid fa-envelope-circle-check text-blue-600 text-sm shrink-0"></i>
+                    <span class="text-slate-600 truncate">Code sent to: <strong id="reset-target-email-display" class="text-slate-900 font-bold">admin@bisu.edu.ph</strong></span>
+                </div>
+                <button type="button" id="change-reset-email-btn" class="text-xs text-bisu-blue font-bold hover:underline shrink-0 cursor-pointer">
+                    Change
+                </button>
+            </div>
+
+            <!-- Recovery Code Input -->
+            <div>
+                <label class="block mb-1 text-xs font-bold text-slate-700 uppercase tracking-wider">6-Digit Verification Code</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-key text-xs"></i>
+                    </div>
+                    <input type="text" id="reset-code-input" required maxlength="8" placeholder="Enter 6-digit code" class="bg-slate-50 border border-slate-300 text-slate-900 text-base font-bold tracking-widest text-center rounded-xl focus:ring-2 focus:ring-bisu-blue focus:border-bisu-blue block w-full pl-10 pr-3.5 py-2.5 shadow-2xs font-mono uppercase transition">
+                </div>
+                <div class="flex items-center justify-between mt-1.5">
+                    <span class="text-[11px] text-slate-400">Code expires in 15 minutes</span>
+                    <button type="button" id="resend-reset-code-btn" class="text-[11px] font-bold text-bisu-blue hover:underline cursor-pointer">
+                        Resend Code
+                    </button>
+                </div>
+            </div>
+
+            <!-- New Password -->
+            <div>
+                <label class="block mb-1 text-xs font-bold text-slate-700 uppercase tracking-wider">New Password</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-lock text-xs"></i>
+                    </div>
+                    <input type="password" id="reset-new-password" required minlength="6" placeholder="Minimum 6 characters" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-bisu-blue focus:border-bisu-blue block w-full pl-10 pr-3.5 py-2.5 shadow-2xs font-medium transition">
+                </div>
+            </div>
+
+            <!-- Confirm New Password -->
+            <div>
+                <label class="block mb-1 text-xs font-bold text-slate-700 uppercase tracking-wider">Confirm New Password</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-lock-open text-xs"></i>
+                    </div>
+                    <input type="password" id="reset-confirm-password" required minlength="6" placeholder="Repeat new password" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-bisu-blue focus:border-bisu-blue block w-full pl-10 pr-3.5 py-2.5 shadow-2xs font-medium transition">
+                </div>
+            </div>
+
+            <button type="submit" id="submit-verify-code-btn" class="w-full text-white bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-200 font-bold rounded-xl text-base px-5 py-3 text-center transition-all duration-200 shadow-md cursor-pointer flex items-center justify-center gap-2">
+                <i class="fa-solid fa-check-circle text-sm"></i> Verify Code & Reset Password
+            </button>
+        </form>
+
+        <div class="mt-4 pt-3.5 border-t border-slate-100">
+            <button type="button" id="back-to-login-btn" class="w-full text-slate-600 hover:text-slate-800 font-bold text-xs py-2 transition cursor-pointer flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-arrow-left text-[11px]"></i> Back to Login
             </button>
         </div>
     </div>

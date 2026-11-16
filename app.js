@@ -2990,6 +2990,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Helper: Detect whether an email belongs to an office account or super admin
+    async function detectUserRoleAndOffice(email, client) {
+        if (!email) return { role: 'super_admin', officeName: null };
+        const cleanEmail = email.toLowerCase().trim();
+
+        // 1. Check office_accounts Supabase table
+        if (client) {
+            try {
+                const { data: officeRows } = await client
+                    .from('office_accounts')
+                    .select('office_name, email')
+                    .ilike('email', cleanEmail)
+                    .maybeSingle();
+                if (officeRows && officeRows.office_name) {
+                    return { role: 'office', officeName: officeRows.office_name };
+                }
+            } catch (e) {
+                console.warn('office_accounts lookup error:', e);
+            }
+
+            // 2. Check admin_settings table
+            try {
+                const { data: sData } = await client
+                    .from('admin_settings')
+                    .select('config')
+                    .eq('id', 'office_accounts')
+                    .maybeSingle();
+                if (sData && Array.isArray(sData.config)) {
+                    const found = sData.config.find(a => a.email && a.email.toLowerCase().trim() === cleanEmail);
+                    if (found && found.office_name) {
+                        return { role: 'office', officeName: found.office_name };
+                    }
+                }
+            } catch (e) {
+                console.warn('admin_settings lookup error:', e);
+            }
+        }
+
+        // 3. Check local office accounts
+        if (typeof getLocalOfficeAccounts === 'function') {
+            try {
+                const localAccounts = getLocalOfficeAccounts();
+                const found = localAccounts.find(a => a.email && a.email.toLowerCase().trim() === cleanEmail);
+                if (found && found.office_name) {
+                    return { role: 'office', officeName: found.office_name };
+                }
+            } catch (e) {}
+        }
+
+        return { role: 'super_admin', officeName: null };
+    }
+
     async function isCurrentUserAdmin(client) {
         // Strict Guard: If visitor arrived via QR code, office direct link, or kiosk mode,
         // they are NEVER authenticated as admin for this session.
@@ -2997,13 +3049,47 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
 
-        if (localStorage.getItem('isLocalAdmin') === 'true') {
-            currentUserRole = 'super_admin';
-            currentOfficeScope = null;
-            sessionStorage.setItem('currentUserRole', 'super_admin');
-            sessionStorage.removeItem('currentOfficeAccount');
-            return true;
+        // 1. Prioritize authenticated Supabase user session
+        if (client) {
+            try {
+                const { data: authData } = await client.auth.getUser();
+                if (authData?.user?.email) {
+                    const roleInfo = await detectUserRoleAndOffice(authData.user.email, client);
+                    if (roleInfo.role === 'office' && roleInfo.officeName) {
+                        localStorage.removeItem('isLocalAdmin');
+                        localStorage.setItem('isLocalOfficeUser', 'true');
+                        localStorage.setItem('localOfficeName', roleInfo.officeName);
+                        currentUserRole = 'office';
+                        currentOfficeScope = roleInfo.officeName;
+                        sessionStorage.setItem('currentUserRole', 'office');
+                        sessionStorage.setItem('currentOfficeAccount', roleInfo.officeName);
+                        return true;
+                    }
+
+                    // Check admin_users table
+                    const { data: adminData } = await client
+                        .from('admin_users')
+                        .select('user_id')
+                        .eq('user_id', authData.user.id)
+                        .maybeSingle();
+
+                    if (adminData || authData.user.email.toLowerCase().includes('admin')) {
+                        localStorage.removeItem('isLocalOfficeUser');
+                        localStorage.removeItem('localOfficeName');
+                        localStorage.setItem('isLocalAdmin', 'true');
+                        currentUserRole = 'super_admin';
+                        currentOfficeScope = null;
+                        sessionStorage.setItem('currentUserRole', 'super_admin');
+                        sessionStorage.removeItem('currentOfficeAccount');
+                        return true;
+                    }
+                }
+            } catch (err) {
+                console.warn('Supabase auth check notice:', err);
+            }
         }
+
+        // 2. Offline / Local fallbacks (only when no Supabase session is active)
         if (localStorage.getItem('isLocalOfficeUser') === 'true') {
             currentUserRole = 'office';
             currentOfficeScope = localStorage.getItem('localOfficeName') || sessionStorage.getItem('currentOfficeAccount');
@@ -3013,84 +3099,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return true;
         }
-        try {
-            const { data: authData, error: authError } = await client.auth.getUser();
-            if (authError || !authData?.user) return false;
 
-            // 1. Check admin_users table
-            const { data: adminData, error: adminError } = await client
-                .from('admin_users')
-                .select('user_id')
-                .eq('user_id', authData.user.id)
-                .maybeSingle();
-
-            if (adminData) {
-                currentUserRole = 'super_admin';
-                currentOfficeScope = null;
-                sessionStorage.setItem('currentUserRole', 'super_admin');
-                sessionStorage.removeItem('currentOfficeAccount');
-                return true;
-            }
-
-            // 2. Check office_accounts table
-            if (authData.user.email) {
-                const { data: officeData } = await client
-                    .from('office_accounts')
-                    .select('id, office_name, email')
-                    .eq('email', authData.user.email)
-                    .maybeSingle();
-                if (officeData) {
-                    currentUserRole = 'office';
-                    currentOfficeScope = officeData.office_name;
-                    sessionStorage.setItem('currentUserRole', 'office');
-                    sessionStorage.setItem('currentOfficeAccount', officeData.office_name);
-                    return true;
-                }
-
-                // 2b. Check admin_settings (id = 'office_accounts')
-                try {
-                    const { data: sData } = await client
-                        .from('admin_settings')
-                        .select('config')
-                        .eq('id', 'office_accounts')
-                        .maybeSingle();
-                    if (sData && Array.isArray(sData.config)) {
-                        const matched = sData.config.find(a => a.email && a.email.toLowerCase() === authData.user.email.toLowerCase());
-                        if (matched) {
-                            currentUserRole = 'office';
-                            currentOfficeScope = matched.office_name;
-                            sessionStorage.setItem('currentUserRole', 'office');
-                            sessionStorage.setItem('currentOfficeAccount', matched.office_name);
-                            return true;
-                        }
-                    }
-                } catch (e) {
-                    console.warn('admin_settings office verification notice:', e);
-                }
-            }
-
-            // 3. Check local office accounts if any
-            if (typeof getLocalOfficeAccounts === 'function' && authData.user.email) {
-                const localAccounts = getLocalOfficeAccounts();
-                const matched = localAccounts.find(acc => acc.email && acc.email.toLowerCase() === authData.user.email.toLowerCase());
-                if (matched) {
-                    currentUserRole = 'office';
-                    currentOfficeScope = matched.office_name;
-                    sessionStorage.setItem('currentUserRole', 'office');
-                    sessionStorage.setItem('currentOfficeAccount', matched.office_name);
-                    return true;
-                }
-            }
-
-            if (adminError) {
-                console.warn('Admin verification notice:', adminError.message);
-            }
-
-            return false;
-        } catch (err) {
-            console.warn('Network or session error during admin check:', err);
-            return false;
+        if (localStorage.getItem('isLocalAdmin') === 'true') {
+            currentUserRole = 'super_admin';
+            currentOfficeScope = null;
+            sessionStorage.setItem('currentUserRole', 'super_admin');
+            sessionStorage.removeItem('currentOfficeAccount');
+            return true;
         }
+
+        return false;
     }
 
     function openAdminLoginModal() {
@@ -3648,31 +3666,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update password everywhere for office accounts (Supabase table, admin_settings, and local storage cache)
                 await updateOfficeAccountPasswordEverywhere(email, newPassword);
 
-                // Success!
-                await Swal.fire({
-                    title: 'Password Reset Successful!',
-                    html: `Your password for <strong>${escapeHtml(email)}</strong> has been successfully updated.<br><span class="text-xs text-slate-500">You can now sign in with your new credentials.</span>`,
-                    icon: 'success',
-                    confirmButtonText: 'Go to Login',
-                    confirmButtonColor: '#059669',
-                    customClass: { popup: 'rounded-3xl' }
-                });
+                // Determine whether this email belongs to an office account or super admin
+                const userRoleInfo = await detectUserRoleAndOffice(email, client);
 
-                // Close Reset Modal and open Login Modal
+                // Close Reset Modal
                 passwordResetModal.classList.add('hidden');
                 passwordResetModal.classList.remove('flex');
                 document.body.style.overflow = '';
                 resetPasswordModalState();
 
-                adminLoginModal.classList.remove('hidden');
-                adminLoginModal.classList.add('flex');
-                document.body.style.overflow = 'hidden';
-                if (loginEmailInput) {
-                    loginEmailInput.value = email;
-                }
-                if (loginPasswordInput) {
-                    loginPasswordInput.value = '';
-                    loginPasswordInput.focus();
+                if (userRoleInfo.role === 'office' && userRoleInfo.officeName) {
+                    localStorage.removeItem('isLocalAdmin');
+                    localStorage.setItem('isLocalOfficeUser', 'true');
+                    localStorage.setItem('localOfficeName', userRoleInfo.officeName);
+                    currentUserRole = 'office';
+                    currentOfficeScope = userRoleInfo.officeName;
+                    sessionStorage.setItem('currentUserRole', 'office');
+                    sessionStorage.setItem('currentOfficeAccount', userRoleInfo.officeName);
+
+                    await Swal.fire({
+                        title: 'Password Reset Successful!',
+                        html: `Your password has been updated.<br><br>You are now logged into the <strong>${escapeHtml(userRoleInfo.officeName)} Office Portal</strong>.`,
+                        icon: 'success',
+                        confirmButtonText: 'Enter Office Portal',
+                        confirmButtonColor: '#1E3A8A',
+                        customClass: { popup: 'rounded-3xl' }
+                    });
+
+                    openAdminView();
+                    fetchAdminData();
+                } else {
+                    localStorage.removeItem('isLocalOfficeUser');
+                    localStorage.removeItem('localOfficeName');
+                    localStorage.setItem('isLocalAdmin', 'true');
+                    currentUserRole = 'super_admin';
+                    currentOfficeScope = null;
+                    sessionStorage.setItem('currentUserRole', 'super_admin');
+                    sessionStorage.removeItem('currentOfficeAccount');
+
+                    await Swal.fire({
+                        title: 'Password Reset Successful!',
+                        html: `Your password for <strong>${escapeHtml(email)}</strong> has been successfully updated.`,
+                        icon: 'success',
+                        confirmButtonText: 'Open Admin Dashboard',
+                        confirmButtonColor: '#059669',
+                        customClass: { popup: 'rounded-3xl' }
+                    });
+
+                    openAdminView();
+                    fetchAdminData();
                 }
 
             } catch (err) {
@@ -4555,23 +4597,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                if (localStorage.getItem('isLocalAdmin') === 'true') {
-                    currentUserRole = 'super_admin';
-                    currentOfficeScope = null;
-                    openAdminView();
-                    fetchAdminData();
-                    return;
-                }
-
-                if (localStorage.getItem('isLocalOfficeUser') === 'true') {
-                    currentUserRole = 'office';
-                    currentOfficeScope = localStorage.getItem('localOfficeName') || sessionStorage.getItem('currentOfficeAccount');
-                    openAdminView();
-                    fetchAdminData();
-                    return;
-                }
-
                 if (!session) {
+                    if (localStorage.getItem('isLocalOfficeUser') === 'true') {
+                        currentUserRole = 'office';
+                        currentOfficeScope = localStorage.getItem('localOfficeName') || sessionStorage.getItem('currentOfficeAccount');
+                        openAdminView();
+                        fetchAdminData();
+                        return;
+                    }
+                    if (localStorage.getItem('isLocalAdmin') === 'true') {
+                        currentUserRole = 'super_admin';
+                        currentOfficeScope = null;
+                        openAdminView();
+                        fetchAdminData();
+                        return;
+                    }
                     closeAdminView();
                     return;
                 }

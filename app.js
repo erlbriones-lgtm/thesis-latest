@@ -1301,6 +1301,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginEmailInput = document.getElementById('login-email');
     const loginPasswordInput = document.getElementById('login-password');
     const submitLoginBtn = document.getElementById('submit-login-btn');
+    const forgotPasswordBtn = document.getElementById('forgot-password-btn');
+
+    // Password Reset Modal
+    const passwordResetModal = document.getElementById('password-reset-modal');
+    const closeResetBtn = document.getElementById('close-reset-btn');
+    const passwordResetForm = document.getElementById('password-reset-form');
+    const resetEmailInput = document.getElementById('reset-email');
+    const submitResetBtn = document.getElementById('submit-reset-btn');
+    const backToLoginBtn = document.getElementById('back-to-login-btn');
 
     // Admin Account Management Modal
     const manageAccountsBtn = document.getElementById('manage-accounts-btn');
@@ -1763,13 +1772,18 @@ document.addEventListener('DOMContentLoaded', () => {
             "Office of the Admin"
         ],
         recipients: ["Campus Quality Assurance & Feedback Head | fredianmherl.masas@bisu.edu.ph"],
-        dimensions: JSON.parse(JSON.stringify(defaultDimensions))
+        dimensions: JSON.parse(JSON.stringify(defaultDimensions)),
+        archivedOffices: []
     });
 
     const normalizeFormConfig = (config) => {
         const normalized = config || {};
         if (!Array.isArray(normalized.offices) || normalized.offices.length === 0) {
             normalized.offices = getDefaultFormConfig().offices;
+        }
+
+        if (!Array.isArray(normalized.archivedOffices)) {
+            normalized.archivedOffices = [];
         }
 
         if (!Array.isArray(normalized.recipients) || normalized.recipients.length === 0) {
@@ -2830,6 +2844,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // MRC Select
         const reportCardSelect = document.getElementById('office-report-card-select');
 
+        // Summary Labels
+        const sidebarSummaryLabel = document.getElementById('sidebar-summary-label');
+        const headerSummaryLabel = document.getElementById('header-summary-label');
+
         if (isOffice) {
             if (sidebarTitle) sidebarTitle.textContent = 'Office Portal';
             if (sidebarOfficeBadge) {
@@ -2840,6 +2858,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sidebarQrLabel) sidebarQrLabel.textContent = 'Office QR Code';
             if (sidebarPrintLabel) sidebarPrintLabel.textContent = 'Print Office Dashboard';
             if (sidebarLogoutLabel) sidebarLogoutLabel.textContent = 'Exit Office Portal';
+            if (sidebarSummaryLabel) sidebarSummaryLabel.textContent = `${currentOfficeScope} Summary`;
+            if (headerSummaryLabel) headerSummaryLabel.textContent = `${currentOfficeScope} Summary`;
             
             // Hide admin only management and maintenance features
             adminOnlyFeatures.forEach(el => el.classList.add('hidden'));
@@ -2872,6 +2892,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sidebarQrLabel) sidebarQrLabel.textContent = 'QR Code Generator';
             if (sidebarPrintLabel) sidebarPrintLabel.textContent = 'Print Full Dashboard';
             if (sidebarLogoutLabel) sidebarLogoutLabel.textContent = 'Close Admin Session';
+            if (sidebarSummaryLabel) sidebarSummaryLabel.textContent = 'Executive Summary';
+            if (headerSummaryLabel) headerSummaryLabel.textContent = 'Executive Summary';
             
             // Show admin features
             adminOnlyFeatures.forEach(el => el.classList.remove('hidden'));
@@ -3083,6 +3105,97 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.overflow = '';
         adminLoginForm.reset();
     });
+
+    // Forgot Password Button
+    if (forgotPasswordBtn) {
+        forgotPasswordBtn.addEventListener('click', () => {
+            adminLoginModal.classList.add('hidden');
+            adminLoginModal.classList.remove('flex');
+            passwordResetModal.classList.remove('hidden');
+            passwordResetModal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            if (resetEmailInput) {
+                resetEmailInput.value = loginEmailInput.value || '';
+                resetEmailInput.focus();
+            }
+        });
+    }
+
+    // Password Reset Modal
+    if (closeResetBtn) {
+        closeResetBtn.addEventListener('click', () => {
+            passwordResetModal.classList.add('hidden');
+            passwordResetModal.classList.remove('flex');
+            document.body.style.overflow = '';
+            passwordResetForm.reset();
+        });
+    }
+
+    if (backToLoginBtn) {
+        backToLoginBtn.addEventListener('click', () => {
+            passwordResetModal.classList.add('hidden');
+            passwordResetModal.classList.remove('flex');
+            adminLoginModal.classList.remove('hidden');
+            adminLoginModal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            if (loginEmailInput) {
+                loginEmailInput.value = resetEmailInput.value || '';
+                loginEmailInput.focus();
+            }
+        });
+    }
+
+    if (passwordResetForm) {
+        passwordResetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = resetEmailInput.value.trim();
+            
+            if (!email) {
+                showToast('Please enter your email address.', 'error');
+                return;
+            }
+
+            submitResetBtn.disabled = true;
+            submitResetBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Sending...';
+
+            try {
+                const client = await getSupabaseClient();
+                if (client) {
+                    // Use Supabase Auth's built-in password reset
+                    const { error } = await client.auth.resetPasswordForEmail(email, {
+                        redirectTo: window.location.origin + window.location.pathname
+                    });
+
+                    if (error) {
+                        throw error;
+                    }
+
+                    showToast('Password reset email sent! Check your inbox.', 'success');
+                    passwordResetModal.classList.add('hidden');
+                    passwordResetModal.classList.remove('flex');
+                    document.body.style.overflow = '';
+                    passwordResetForm.reset();
+                } else {
+                    showToast('Unable to connect to authentication service. Please check your internet connection.', 'error');
+                }
+            } catch (error) {
+                console.error('Password reset error:', error);
+                const errorMsg = error?.message || error || 'Unknown error';
+                
+                // Provide helpful error messages based on the error
+                if (errorMsg.includes('Email provider not enabled')) {
+                    showToast('Email authentication is not configured. Please contact the administrator.', 'error');
+                } else if (errorMsg.includes('Email not confirmed')) {
+                    showToast('Email provider not configured in Supabase. Please enable Email Auth in Supabase Dashboard.', 'error');
+                } else {
+                    showToast(`Failed to send reset email: ${errorMsg}`, 'error');
+                }
+            } finally {
+                submitResetBtn.disabled = false;
+                submitResetBtn.innerHTML = 'Send Reset Code';
+            }
+        });
+    }
 
     adminLoginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -3416,8 +3529,14 @@ document.addEventListener('DOMContentLoaded', () => {
         accountsTableBody.innerHTML = '';
         if (!accounts || accounts.length === 0) {
             accountsTableBody.innerHTML = `<tr><td colspan="3" class="px-4 py-8 text-center text-slate-400 italic">No office accounts registered.</td></tr>`;
+            const countBadge = document.getElementById('acc-roles-count-badge');
+            if (countBadge) countBadge.textContent = '0';
             return;
         }
+
+        // Update roles count badge
+        const countBadge = document.getElementById('acc-roles-count-badge');
+        if (countBadge) countBadge.textContent = accounts.length;
 
         accounts.forEach((acc, idx) => {
             const tr = document.createElement('tr');
@@ -3437,13 +3556,65 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </td>
                 <td class="px-4 py-3 text-right">
-                    <button onclick="deleteOfficeAccount('${accId}', '${escapeHtml(acc.email)}')" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ml-auto">
-                        <i class="fa-solid fa-trash-can text-xs"></i>
-                        <span>Delete</span>
+                    <button onclick="updateOfficeAccount('${accId}', '${escapeHtml(acc.office_name)}', '${escapeHtml(acc.email)}')" class="text-bisu-blue hover:text-bisu-blue-dark bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ml-auto">
+                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                        <span>Update</span>
                     </button>
                 </td>
             `;
             accountsTableBody.appendChild(tr);
+        });
+    }
+
+    // === Office Accounts Modal Tab Switching ===
+    function switchAccTab(activeTabId) {
+        const tabBtns = document.querySelectorAll('.acc-tab-btn');
+        const tabPanes = document.querySelectorAll('.acc-tab-pane');
+        tabBtns.forEach(btn => {
+            btn.classList.remove('border-bisu-blue', 'text-bisu-blue');
+            btn.classList.add('border-transparent', 'text-slate-500');
+        });
+        tabPanes.forEach(pane => pane.classList.add('hidden'));
+
+        const activeBtn = document.getElementById('acc-tab-' + activeTabId);
+        const activePane = document.getElementById('acc-pane-' + activeTabId);
+        if (activeBtn) {
+            activeBtn.classList.add('border-bisu-blue', 'text-bisu-blue');
+            activeBtn.classList.remove('border-transparent', 'text-slate-500');
+        }
+        if (activePane) activePane.classList.remove('hidden');
+    }
+    window.switchAccTab = switchAccTab;
+
+    // Wire up tab buttons
+    ['add-office', 'credentials', 'accounts-list'].forEach(tabId => {
+        const btn = document.getElementById('acc-tab-' + tabId);
+        if (btn) {
+            btn.addEventListener('click', () => switchAccTab(tabId));
+        }
+    });
+
+    // Cancel update mode button
+    const cancelUpdateBtn = document.getElementById('acc-cancel-update-btn');
+    if (cancelUpdateBtn) {
+        cancelUpdateBtn.addEventListener('click', () => {
+            if(officeAccountForm) officeAccountForm.reset();
+            window._updatingAccountEmail = null;
+            if (submitAccBtn) submitAccBtn.innerHTML = 'Save Credentials';
+            const banner = document.getElementById('acc-update-mode-banner');
+            if (banner) banner.classList.add('hidden');
+            const tabLabel = document.getElementById('acc-tab-credentials-label');
+            if (tabLabel) tabLabel.textContent = 'Office Login';
+            const formTitle = document.getElementById('acc-form-title');
+            if (formTitle) formTitle.textContent = 'Add / Reset Office Login';
+            const formSubtitle = document.getElementById('acc-form-subtitle');
+            if (formSubtitle) formSubtitle.textContent = 'Assign login credentials for an office to access the portal';
+            const formIcon = document.getElementById('acc-form-icon');
+            if (formIcon) {
+                formIcon.classList.remove('bg-amber-50', 'text-amber-600', 'border-amber-100');
+                formIcon.classList.add('bg-blue-50', 'text-bisu-blue', 'border-blue-100');
+                formIcon.innerHTML = '<i class="fa-solid fa-user-plus"></i>';
+            }
         });
     }
 
@@ -3452,6 +3623,9 @@ document.addEventListener('DOMContentLoaded', () => {
             manageAccountsModal.classList.remove('hidden');
             manageAccountsModal.classList.add('flex');
             document.body.style.overflow = 'hidden';
+
+            // Reset to first tab
+            switchAccTab('add-office');
 
             if (accOfficeSelect && formConfig && formConfig.offices) {
                 const currentVal = accOfficeSelect.value;
@@ -3471,7 +3645,16 @@ document.addEventListener('DOMContentLoaded', () => {
             manageAccountsModal.classList.add('hidden');
             manageAccountsModal.classList.remove('flex');
             document.body.style.overflow = '';
-            if(officeAccountForm) officeAccountForm.reset();
+            if(officeAccountForm) {
+                officeAccountForm.reset();
+                window._updatingAccountEmail = null;
+                if (submitAccBtn) submitAccBtn.innerHTML = 'Save Credentials';
+            }
+            // Reset update mode UI
+            const banner = document.getElementById('acc-update-mode-banner');
+            if (banner) banner.classList.add('hidden');
+            const tabLabel = document.getElementById('acc-tab-credentials-label');
+            if (tabLabel) tabLabel.textContent = 'Office Login';
         });
     }
 
@@ -3483,12 +3666,36 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Reset button text when form is manually reset
+    if(officeAccountForm) {
+        officeAccountForm.addEventListener('reset', () => {
+            window._updatingAccountEmail = null;
+            if (submitAccBtn) submitAccBtn.innerHTML = 'Save Credentials';
+            // Reset update mode UI
+            const banner = document.getElementById('acc-update-mode-banner');
+            if (banner) banner.classList.add('hidden');
+            const tabLabel = document.getElementById('acc-tab-credentials-label');
+            if (tabLabel) tabLabel.textContent = 'Office Login';
+            const formTitle = document.getElementById('acc-form-title');
+            if (formTitle) formTitle.textContent = 'Add / Reset Office Login';
+            const formSubtitle = document.getElementById('acc-form-subtitle');
+            if (formSubtitle) formSubtitle.textContent = 'Assign login credentials for an office to access the portal';
+            const formIcon = document.getElementById('acc-form-icon');
+            if (formIcon) {
+                formIcon.classList.remove('bg-amber-50', 'text-amber-600', 'border-amber-100');
+                formIcon.classList.add('bg-blue-50', 'text-bisu-blue', 'border-blue-100');
+                formIcon.innerHTML = '<i class="fa-solid fa-user-plus"></i>';
+            }
+        });
+    }
+
     if(officeAccountForm) {
         officeAccountForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const office = accOfficeSelect.value;
             const email = accEmailInput.value.trim().toLowerCase();
             const password = accPasswordInput.value;
+            const originalEmail = window._updatingAccountEmail;
 
             if (!email || !office) {
                 showToast('Please specify a target office and email address.', 'warning');
@@ -3509,6 +3716,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 client = await getSupabaseClient();
             } catch (ce) {
                 console.warn('Supabase client error:', ce);
+            }
+
+            // If updating an existing account (email changed), delete the old one first
+            if (originalEmail && originalEmail !== email && client) {
+                try {
+                    await client.from('office_accounts').delete().eq('email', originalEmail);
+                } catch (deleteErr) {
+                    console.warn('Error deleting old account:', deleteErr);
+                }
             }
 
             if (client) {
@@ -3584,6 +3800,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         .eq('id', 'office_accounts')
                         .maybeSingle();
                     if (sData && Array.isArray(sData.config)) {
+                        // Remove the new email to avoid duplicates (old email already removed from DB)
                         settingsList = sData.config.filter(a => a.email.toLowerCase() !== email);
                     }
                     settingsList.push({
@@ -3605,7 +3822,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Always update local storage cache for immediate reactivity and offline support
-            const currentList = getLocalOfficeAccounts().filter(a => a.email.toLowerCase() !== email);
+            let currentList = getLocalOfficeAccounts();
+            // Remove the old email if updating
+            if (originalEmail) {
+                currentList = currentList.filter(a => a.email.toLowerCase() !== originalEmail.toLowerCase());
+            }
+            // Remove the new email to avoid duplicates
+            currentList = currentList.filter(a => a.email.toLowerCase() !== email);
             currentList.push({ id: 'acc_' + Date.now(), email, office_name: office, password, updated_at: new Date().toISOString() });
             saveLocalOfficeAccounts(currentList);
 
@@ -3664,13 +3887,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (savedToSupabase) {
-                showToast(`Credentials successfully saved to database for ${office} (${email})! Feedbacks synced.`, 'success');
+                const action = originalEmail ? 'updated' : 'saved';
+                showToast(`Office account credentials ${action} to database for ${office} (${email})! Feedbacks synced.`, 'success');
             } else {
                 showToast(`Office credentials saved locally and authorized for ${office} (${email}).`, 'success');
             }
 
             officeAccountForm.reset();
+            window._updatingAccountEmail = null; // Clear the update state
             await fetchOfficeAccounts();
+
+            // Switch to accounts list tab to show the result
+            switchAccTab('accounts-list');
 
             submitAccBtn.disabled = false;
             submitAccBtn.innerHTML = 'Save Credentials';
@@ -3750,6 +3978,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
         showToast(`Office account ${email} removed.`, 'success');
         await fetchOfficeAccounts();
+    };
+
+    window.updateOfficeAccount = async function(id, officeName, email) {
+        // Switch to the credentials tab
+        switchAccTab('credentials');
+
+        // Pre-fill the form with current values
+        if (accOfficeSelect) accOfficeSelect.value = officeName;
+        if (accEmailInput) accEmailInput.value = email;
+        if (accPasswordInput) accPasswordInput.value = '';
+
+        // Show update mode banner
+        const banner = document.getElementById('acc-update-mode-banner');
+        if (banner) {
+            banner.classList.remove('hidden');
+            const bannerText = document.getElementById('acc-update-mode-text');
+            if (bannerText) bannerText.textContent = `Editing credentials for ${officeName} (${email})`;
+        }
+
+        // Update tab label to indicate update mode
+        const tabLabel = document.getElementById('acc-tab-credentials-label');
+        if (tabLabel) tabLabel.textContent = 'Updating...';
+
+        // Update form header to reflect update mode
+        const formTitle = document.getElementById('acc-form-title');
+        if (formTitle) formTitle.textContent = 'Update Office Login';
+        const formSubtitle = document.getElementById('acc-form-subtitle');
+        if (formSubtitle) formSubtitle.textContent = `Editing credentials for ${officeName}`;
+        const formIcon = document.getElementById('acc-form-icon');
+        if (formIcon) {
+            formIcon.classList.remove('bg-blue-50', 'text-bisu-blue', 'border-blue-100');
+            formIcon.classList.add('bg-amber-50', 'text-amber-600', 'border-amber-100');
+            formIcon.innerHTML = '<i class="fa-solid fa-pen-to-square"></i>';
+        }
+
+        // Focus on the password field since office and email are pre-filled
+        if (accPasswordInput) accPasswordInput.focus();
+
+        // Change button text to indicate update mode
+        if (submitAccBtn) submitAccBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Update Credentials';
+
+        // Store the original email for identification
+        window._updatingAccountEmail = email;
     };
 
 
@@ -4976,6 +5247,7 @@ BISU Calape Campus Portal: https://bisu.edu.ph
     const addDimensionBtn = document.getElementById('add-dimension-btn');
 
     let tempSettingsOffices = [];
+    let tempSettingsArchivedOffices = [];
     let tempSettingsDimensions = { en: [], tl: [], ceb: [] };
     let selectedSettingsLang = 'en';
 
@@ -5057,8 +5329,8 @@ BISU Calape Campus Portal: https://bisu.edu.ph
                     <button type="button" class="move-office-down-btn p-1.5 text-slate-400 hover:text-bisu-blue ${isLast ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}" data-idx="${idx}" ${isLast ? 'disabled' : ''} title="Move Down">
                         <i class="fa-solid fa-chevron-down text-xs"></i>
                     </button>
-                    <button type="button" class="delete-office-btn p-1.5 text-slate-400 hover:text-rose-600 transition cursor-pointer ml-1" data-idx="${idx}" title="Remove Office">
-                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    <button type="button" class="archive-office-btn p-1.5 text-amber-600 hover:text-amber-800 hover:bg-amber-100/60 rounded-lg transition cursor-pointer ml-1" data-idx="${idx}" title="Archive Office">
+                        <i class="fa-solid fa-box-archive text-xs"></i>
                     </button>
                 </div>
             `;
@@ -5074,7 +5346,11 @@ BISU Calape Campus Portal: https://bisu.edu.ph
                 if (val) {
                     tempSettingsOffices[idx] = val;
                 } else {
-                    tempSettingsOffices.splice(idx, 1);
+                    const removed = tempSettingsOffices.splice(idx, 1)[0];
+                    if (removed && !tempSettingsArchivedOffices.includes(removed)) {
+                        tempSettingsArchivedOffices.push(removed);
+                    }
+                    renderArchivedOfficesList();
                 }
                 renderInteractiveOfficesList();
                 if (configOffices) configOffices.value = tempSettingsOffices.join('\n');
@@ -5105,12 +5381,33 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             });
         });
 
-        document.querySelectorAll('.delete-office-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.archive-office-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
                 const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
-                tempSettingsOffices.splice(idx, 1);
-                renderInteractiveOfficesList();
-                if (configOffices) configOffices.value = tempSettingsOffices.join('\n');
+                const officeToArchive = tempSettingsOffices[idx];
+                if (!officeToArchive) return;
+
+                const result = await Swal.fire({
+                    title: 'Archive Office?',
+                    html: `Are you sure you want to archive <strong>${escapeHtml(officeToArchive)}</strong>?<br><span class="text-xs text-slate-500">It will no longer appear on new client feedback forms, but all historical responses and records remain safe.</span>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Archive Office',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#d97706',
+                    cancelButtonColor: '#64748b'
+                });
+
+                if (result.isConfirmed) {
+                    tempSettingsOffices.splice(idx, 1);
+                    if (!tempSettingsArchivedOffices.includes(officeToArchive)) {
+                        tempSettingsArchivedOffices.push(officeToArchive);
+                    }
+                    renderInteractiveOfficesList();
+                    renderArchivedOfficesList();
+                    if (configOffices) configOffices.value = tempSettingsOffices.join('\n');
+                    showToast(`"${officeToArchive}" has been archived.`, 'info');
+                }
             });
         });
 
@@ -5119,12 +5416,74 @@ BISU Calape Campus Portal: https://bisu.edu.ph
         }
     }
 
+    // Archived Offices Renderer
+    function renderArchivedOfficesList() {
+        const wrapper = document.getElementById('archived-offices-wrapper');
+        const list = document.getElementById('archived-offices-list');
+        const countBadge = document.getElementById('archived-offices-count');
+
+        if (!wrapper || !list) return;
+
+        if (countBadge) countBadge.textContent = tempSettingsArchivedOffices.length;
+
+        if (tempSettingsArchivedOffices.length === 0) {
+            wrapper.classList.add('hidden');
+            list.innerHTML = '';
+            return;
+        }
+
+        wrapper.classList.remove('hidden');
+        list.innerHTML = '';
+
+        tempSettingsArchivedOffices.forEach((office, idx) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'flex items-center justify-between gap-2 p-2 px-3 bg-amber-50/60 border border-amber-200/80 rounded-xl text-xs hover:bg-amber-100/50 transition';
+            itemDiv.innerHTML = `
+                <div class="flex items-center gap-2 min-w-0">
+                    <i class="fa-solid fa-box-archive text-amber-500 text-xs shrink-0"></i>
+                    <span class="font-semibold text-slate-700 truncate">${escapeHtml(office)}</span>
+                    <span class="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded shrink-0">Archived</span>
+                </div>
+                <button type="button" class="restore-office-btn px-2.5 py-1 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-lg font-semibold text-xs transition cursor-pointer flex items-center shrink-0 shadow-2xs" data-idx="${idx}" title="Restore Office">
+                    <i class="fa-solid fa-rotate-left mr-1 text-[10px]"></i> Restore
+                </button>
+            `;
+            list.appendChild(itemDiv);
+        });
+
+        list.querySelectorAll('.restore-office-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
+                const officeToRestore = tempSettingsArchivedOffices[idx];
+                if (!officeToRestore) return;
+
+                tempSettingsArchivedOffices.splice(idx, 1);
+                if (!tempSettingsOffices.includes(officeToRestore)) {
+                    tempSettingsOffices.push(officeToRestore);
+                }
+                renderInteractiveOfficesList();
+                renderArchivedOfficesList();
+                if (configOffices) configOffices.value = tempSettingsOffices.join('\n');
+                showToast(`Restored "${officeToRestore}" to active offices.`, 'success');
+            });
+        });
+    }
+
     // Add Office Functionality
     function addSingleOffice(name) {
         const cleanName = (name || '').trim();
         if (!cleanName) return;
         if (tempSettingsOffices.includes(cleanName)) {
-            showToast(`"${cleanName}" is already in the offices list.`, 'info');
+            showToast(`"${cleanName}" is already in active offices.`, 'info');
+            return;
+        }
+        const archIdx = tempSettingsArchivedOffices.indexOf(cleanName);
+        if (archIdx !== -1) {
+            tempSettingsArchivedOffices.splice(archIdx, 1);
+            tempSettingsOffices.push(cleanName);
+            renderInteractiveOfficesList();
+            renderArchivedOfficesList();
+            showToast(`Restored "${cleanName}" from archive to active offices.`, 'success');
             return;
         }
         tempSettingsOffices.push(cleanName);
@@ -5319,8 +5678,10 @@ BISU Calape Campus Portal: https://bisu.edu.ph
             if (result.isConfirmed) {
                 const defaults = getDefaultFormConfig();
                 tempSettingsOffices = [...defaults.offices];
+                tempSettingsArchivedOffices = [...(defaults.archivedOffices || [])];
                 tempSettingsDimensions = JSON.parse(JSON.stringify(defaults.dimensions));
                 renderInteractiveOfficesList();
+                renderArchivedOfficesList();
                 buildSettingsEditor();
                 showToast('Restored default form settings.', 'info');
             }
@@ -5331,11 +5692,13 @@ BISU Calape Campus Portal: https://bisu.edu.ph
     if (settingsBtn) {
         settingsBtn.addEventListener('click', () => {
             tempSettingsOffices = [...formConfig.offices];
+            tempSettingsArchivedOffices = [...(formConfig.archivedOffices || [])];
             tempSettingsDimensions = JSON.parse(JSON.stringify(formConfig.dimensions));
             selectedSettingsLang = 'en';
 
             if (configOffices) configOffices.value = tempSettingsOffices.join('\n');
             renderInteractiveOfficesList();
+            renderArchivedOfficesList();
             switchDimensionLanguage('en');
 
             adminSettingsModal.classList.remove('hidden');
@@ -5384,6 +5747,7 @@ BISU Calape Campus Portal: https://bisu.edu.ph
                 }
 
                 formConfig.offices = [...tempSettingsOffices];
+                formConfig.archivedOffices = [...tempSettingsArchivedOffices];
                 formConfig.dimensions = JSON.parse(JSON.stringify(tempSettingsDimensions));
 
                 formConfig = normalizeFormConfig(formConfig);
@@ -5494,15 +5858,18 @@ BISU Calape Campus Portal: https://bisu.edu.ph
         const detailEl = document.getElementById('db-connection-detail');
         if (badge) {
             const styles = {
-                syncing: ['SYNCING', 'bg-amber-50 text-amber-700 border border-amber-200'],
-                connected: ['LIVE', 'bg-emerald-50 text-emerald-700 border border-emerald-200'],
-                local: ['LOCAL CACHE', 'bg-amber-50 text-amber-800 border border-amber-200'],
-                error: ['DB ERROR', 'bg-red-50 text-red-700 border border-red-200'],
-                offline: ['OFFLINE', 'bg-slate-100 text-slate-600 border border-slate-200']
+                syncing: ['bg-amber-50 text-amber-700 border border-amber-200', 'bg-amber-500'],
+                connected: ['bg-emerald-50 text-emerald-700 border border-emerald-200', 'bg-emerald-500'],
+                local: ['bg-amber-50 text-amber-800 border border-amber-200', 'bg-amber-500'],
+                error: ['bg-red-50 text-red-700 border border-red-200', 'bg-red-500'],
+                offline: ['bg-slate-100 text-slate-600 border border-slate-200', 'bg-slate-400']
             };
-            const [label, color] = styles[state] || styles.offline;
-            badge.textContent = label;
-            badge.className = `${color} text-xs font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider`;
+            const [color, dotColor] = styles[state] || styles.offline;
+            badge.className = `inline-flex items-center gap-1.5 ${color} text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-2xs`;
+            const dot = badge.querySelector('span');
+            if (dot) {
+                dot.className = `w-2 h-2 rounded-full ${dotColor} animate-pulse`;
+            }
         }
         if (detailEl) detailEl.textContent = detail || '';
     }
@@ -9759,6 +10126,327 @@ BISU Calape Campus Portal: https://bisu.edu.ph
         }
     }
 
+    // ==========================================
+    // EXECUTIVE DASHBOARD SUMMARY SYSTEM
+    // ==========================================
+    const dashboardSummaryModal = document.getElementById('dashboard-summary-modal');
+    const closeSummaryModalBtn = document.getElementById('close-summary-modal-btn');
+    const sidebarSummaryBtn = document.getElementById('sidebar-summary-btn');
+    const headerSummaryBtn = document.getElementById('header-summary-btn');
+    const sidebarJumpReportsBtn = document.getElementById('sidebar-jump-reports-btn');
+    const summaryJumpToTablesBtn = document.getElementById('summary-jump-to-tables-btn');
+
+    function openDashboardSummaryModal() {
+        if (!dashboardSummaryModal) return;
+
+        const isOffice = currentUserRole === 'office' && !!currentOfficeScope;
+        const feedbacks = (typeof lastFilteredFeedbacks !== 'undefined' && lastFilteredFeedbacks && lastFilteredFeedbacks.length > 0)
+            ? lastFilteredFeedbacks
+            : (lastFetchedFeedbacks || []);
+        const complaints = (typeof lastFilteredComplaints !== 'undefined' && lastFilteredComplaints)
+            ? lastFilteredComplaints
+            : (lastFetchedComplaints || []);
+
+        // 1. Meta Badges & Headers
+        const titleEl = document.getElementById('summary-modal-title');
+        const subtitleEl = document.getElementById('summary-modal-subtitle');
+        const scopeBadgeEl = document.getElementById('summary-scope-text');
+        const periodBadgeEl = document.getElementById('summary-period-text');
+
+        if (titleEl) {
+            titleEl.textContent = isOffice ? `${currentOfficeScope} Performance Summary` : 'Executive Satisfaction & Performance Summary';
+        }
+        if (subtitleEl) {
+            subtitleEl.textContent = isOffice 
+                ? `Consolidated evaluation metrics for ${currentOfficeScope}`
+                : 'Consolidated KPIs, service quality metrics, and office analytics';
+        }
+        if (scopeBadgeEl) {
+            scopeBadgeEl.textContent = isOffice ? currentOfficeScope : 'All Campus Offices';
+        }
+
+        // Active Period String
+        let periodStr = 'All Recorded Months';
+        if (filterDateInput && filterDateInput.value) {
+            periodStr = `Date: ${filterDateInput.value}`;
+        } else if (filterMonthSelect && filterMonthSelect.value !== 'all') {
+            const mText = filterMonthSelect.options[filterMonthSelect.selectedIndex]?.text || '';
+            const yText = (filterYearSelect && filterYearSelect.value !== 'all') ? filterYearSelect.value : '';
+            periodStr = `${mText} ${yText}`.trim();
+        } else if (filterYearSelect && filterYearSelect.value !== 'all') {
+            periodStr = `Year ${filterYearSelect.value}`;
+        }
+        if (periodBadgeEl) periodBadgeEl.textContent = periodStr;
+
+        // 2. Key Performance Indicators (KPIs)
+        let totalScore = 0;
+        let validScoreCount = 0;
+        let commendationCount = 0;
+        const officeCounts = {};
+        const officeScores = {};
+        const clientTypeCounts = { Student: 0, Faculty: 0, Citizen: 0, Business: 0, Government: 0, Other: 0 };
+        const cc1Counts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+
+        feedbacks.forEach(f => {
+            const score = parseFloat(f.mean_score);
+            if (!isNaN(score) && score > 0) {
+                totalScore += score;
+                validScoreCount++;
+            }
+            if (f.commendations && f.commendations.trim() !== '') {
+                commendationCount++;
+            }
+            const off = f.office_visited || 'Unspecified';
+            officeCounts[off] = (officeCounts[off] || 0) + 1;
+            if (!officeScores[off]) officeScores[off] = { sum: 0, count: 0 };
+            if (!isNaN(score) && score > 0) {
+                officeScores[off].sum += score;
+                officeScores[off].count++;
+            }
+
+            // Demographics
+            const cType = f.client_type || 'Citizen';
+            if (clientTypeCounts[cType] !== undefined) {
+                clientTypeCounts[cType]++;
+            } else {
+                clientTypeCounts.Other++;
+            }
+
+            // Citizen Charter CC1
+            const cc1 = f.cc1 || f.cc_1;
+            if (cc1 && cc1Counts[cc1] !== undefined) {
+                cc1Counts[cc1]++;
+            }
+        });
+
+        const overallAvg = validScoreCount > 0 ? (totalScore / validScoreCount) : 0;
+        const getDesc = (score) => {
+            if (score >= 4.5) return { text: 'Outstanding', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' };
+            if (score >= 3.5) return { text: 'Very Satisfactory', color: 'text-blue-700 bg-blue-50 border-blue-200' };
+            if (score >= 2.5) return { text: 'Satisfactory', color: 'text-amber-700 bg-amber-50 border-amber-200' };
+            if (score >= 1.5) return { text: 'Fair', color: 'text-orange-700 bg-orange-50 border-orange-200' };
+            if (score > 0) return { text: 'Poor', color: 'text-red-700 bg-red-50 border-red-200' };
+            return { text: 'No Ratings', color: 'text-slate-500 bg-slate-50 border-slate-200' };
+        };
+        const descInfo = getDesc(overallAvg);
+
+        // Populate KPI cards
+        const kpiTotalEl = document.getElementById('sum-kpi-total');
+        const kpiAvgEl = document.getElementById('sum-kpi-avg');
+        const kpiDescEl = document.getElementById('sum-kpi-desc');
+        const kpiComplaintsEl = document.getElementById('sum-kpi-complaints');
+        const kpiComplaintsStatusEl = document.getElementById('sum-kpi-complaints-status');
+        const kpiCommendationsEl = document.getElementById('sum-kpi-commendations');
+
+        if (kpiTotalEl) kpiTotalEl.textContent = feedbacks.length.toLocaleString();
+        if (kpiAvgEl) kpiAvgEl.textContent = overallAvg > 0 ? overallAvg.toFixed(2) : '0.00';
+        if (kpiDescEl) {
+            kpiDescEl.textContent = descInfo.text;
+            kpiDescEl.className = `text-[11px] font-bold mt-1 inline-block px-2.5 py-0.5 rounded-full border ${descInfo.color}`;
+        }
+        if (kpiComplaintsEl) kpiComplaintsEl.textContent = complaints.length.toLocaleString();
+        if (kpiComplaintsStatusEl) {
+            if (complaints.length === 0) {
+                kpiComplaintsStatusEl.textContent = 'Clean Record (0)';
+                kpiComplaintsStatusEl.className = 'text-[11px] font-bold text-emerald-600 mt-1 block';
+            } else {
+                kpiComplaintsStatusEl.textContent = `${complaints.length} Complaint(s) Logged`;
+                kpiComplaintsStatusEl.className = 'text-[11px] font-bold text-red-600 mt-1 block';
+            }
+        }
+        if (kpiCommendationsEl) kpiCommendationsEl.textContent = commendationCount.toLocaleString();
+
+        // 3. 8 Quality Dimensions Breakdown
+        const dimContainer = document.getElementById('summary-dimensions-container');
+        if (dimContainer) {
+            dimContainer.innerHTML = '';
+            const activeDimensions = (formConfig && formConfig.dimensions && formConfig.dimensions['en']) || [
+                { id: 'dim_responsiveness', label: '1. Responsiveness' },
+                { id: 'dim_reliability', label: '2. Reliability (Quality)' },
+                { id: 'dim_facilities', label: '3. Access & Facilities' },
+                { id: 'dim_communication', label: '4. Communication' },
+                { id: 'dim_costs', label: '5. Costs' },
+                { id: 'dim_integrity', label: '6. Integrity' },
+                { id: 'dim_assurance', label: '7. Assurance' },
+                { id: 'dim_outcome', label: '8. Outcome' }
+            ];
+
+            const dimTotals = {};
+            const dimCounts = {};
+            activeDimensions.forEach(d => {
+                dimTotals[d.id] = 0;
+                dimCounts[d.id] = 0;
+            });
+
+            feedbacks.forEach(row => {
+                const r = row.ratings || row;
+                activeDimensions.forEach(d => {
+                    const val = parseInt(r[d.id]);
+                    if (!isNaN(val) && val > 0) {
+                        dimTotals[d.id] += val;
+                        dimCounts[d.id]++;
+                    }
+                });
+            });
+
+            activeDimensions.forEach(d => {
+                const count = dimCounts[d.id] || 0;
+                const avg = count > 0 ? (dimTotals[d.id] / count) : 0;
+                const pct = Math.min(100, Math.max(0, (avg / 5.0) * 100));
+                let label = d.label;
+                if (label.includes('.')) label = label.split('.').slice(1).join('.').trim();
+
+                let barColor = 'bg-bisu-blue';
+                if (avg < 2.5 && avg > 0) barColor = 'bg-rose-500';
+
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'space-y-1.5';
+                rowDiv.innerHTML = `
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-bold text-slate-700">${escapeHtml(label)}</span>
+                        <div class="flex items-center gap-1 font-mono">
+                            <strong class="font-bold text-slate-900">${avg > 0 ? avg.toFixed(2) : 'N/A'}</strong>
+                            <span class="text-[11px] text-slate-400">/ 5.0</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden flex">
+                        <div class="${barColor} h-2 rounded-full transition-all duration-500" style="width: ${pct.toFixed(1)}%"></div>
+                    </div>
+                `;
+                dimContainer.appendChild(rowDiv);
+            });
+        }
+
+        // 4. Client Type Breakdown (Icon-Free)
+        const clientContainer = document.getElementById('summary-client-types-container');
+        if (clientContainer) {
+            clientContainer.innerHTML = '';
+            const totalF = feedbacks.length || 1;
+            const types = [
+                { key: 'Student', label: 'Students' },
+                { key: 'Faculty', label: 'Faculty / Staff' },
+                { key: 'Citizen', label: 'Citizens' },
+                { key: 'Business', label: 'Business' },
+                { key: 'Government', label: 'Government' }
+            ];
+
+            types.forEach(t => {
+                const count = clientTypeCounts[t.key] || 0;
+                const pct = ((count / totalF) * 100).toFixed(1);
+                const card = document.createElement('div');
+                card.className = 'p-3.5 rounded-xl border border-slate-200/90 bg-slate-50/60 flex flex-col justify-between';
+                card.innerHTML = `
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">${t.label}</span>
+                    <div class="flex items-baseline justify-between mt-1">
+                        <strong class="text-2xl font-black text-slate-900 leading-none">${count}</strong>
+                        <span class="text-xs font-semibold text-slate-400 font-mono">${pct}%</span>
+                    </div>
+                `;
+                clientContainer.appendChild(card);
+            });
+        }
+
+        // 5. Citizen's Charter Awareness
+        const ccContainer = document.getElementById('summary-cc-container');
+        if (ccContainer) {
+            const totalF = feedbacks.length || 1;
+            const awareSaw = cc1Counts[1] || 0;
+            const awareNotSaw = cc1Counts[2] || 0;
+            const notAware = cc1Counts[4] || 0;
+            const awarePct = (((awareSaw + awareNotSaw) / totalF) * 100).toFixed(1);
+
+            ccContainer.innerHTML = `
+                <div class="flex items-center justify-between p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+                    <div>
+                        <span class="font-bold text-slate-800 block text-xs">Citizen's Charter Awareness</span>
+                        <span class="text-[11px] text-slate-500">Clients familiar with official charter</span>
+                    </div>
+                    <strong class="text-base font-black text-bisu-blue font-mono">${awarePct}%</strong>
+                </div>
+                <div class="grid grid-cols-2 gap-2.5 text-[11px]">
+                    <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-slate-500 block">Saw Charter (CC1-1):</span>
+                        <strong class="text-slate-800 font-bold">${awareSaw} (${((awareSaw / totalF) * 100).toFixed(1)}%)</strong>
+                    </div>
+                    <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-slate-500 block">Unaware (CC1-4):</span>
+                        <strong class="text-slate-800 font-bold">${notAware} (${((notAware / totalF) * 100).toFixed(1)}%)</strong>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 6. Office Breakdown Table
+        const officesHeading = document.getElementById('summary-offices-heading');
+        const officesTbody = document.getElementById('summary-offices-tbody');
+        if (officesHeading) {
+            officesHeading.textContent = isOffice 
+                ? `${currentOfficeScope} Feedback & Service Activity`
+                : 'Campus Offices Performance Comparison';
+        }
+
+        if (officesTbody) {
+            officesTbody.innerHTML = '';
+            const sortedOffices = Object.entries(officeCounts).sort((a, b) => b[1] - a[1]);
+            const totalF = feedbacks.length || 1;
+
+            if (sortedOffices.length === 0) {
+                officesTbody.innerHTML = `<tr><td colspan="5" class="px-5 py-8 text-center text-slate-400 italic">No feedback entries recorded for this period.</td></tr>`;
+            } else {
+                sortedOffices.forEach(([offName, count]) => {
+                    const offScoreObj = officeScores[offName];
+                    const offAvg = (offScoreObj && offScoreObj.count > 0) ? (offScoreObj.sum / offScoreObj.count) : 0;
+                    const pct = ((count / totalF) * 100).toFixed(1);
+                    const desc = getDesc(offAvg);
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-slate-100 hover:bg-slate-50 transition';
+                    tr.innerHTML = `
+                        <td class="px-5 py-3.5 font-bold text-slate-900">${escapeHtml(offName)}</td>
+                        <td class="px-4 py-3.5 text-center font-bold text-slate-800 font-mono">${count}</td>
+                        <td class="px-4 py-3.5 text-center text-slate-600 font-mono">${pct}%</td>
+                        <td class="px-4 py-3.5 text-center font-bold text-bisu-blue font-mono">${offAvg > 0 ? offAvg.toFixed(2) : 'N/A'}</td>
+                        <td class="px-4 py-3.5 text-center">
+                            <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${desc.color}">${desc.text}</span>
+                        </td>
+                    `;
+                    officesTbody.appendChild(tr);
+                });
+            }
+        }
+
+        // Show Modal
+        dashboardSummaryModal.classList.remove('hidden');
+        dashboardSummaryModal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDashboardSummaryModal() {
+        if (!dashboardSummaryModal) return;
+        dashboardSummaryModal.classList.add('hidden');
+        dashboardSummaryModal.classList.remove('flex');
+        document.body.style.overflow = '';
+    }
+
+    if (sidebarSummaryBtn) sidebarSummaryBtn.addEventListener('click', openDashboardSummaryModal);
+    if (headerSummaryBtn) headerSummaryBtn.addEventListener('click', openDashboardSummaryModal);
+    if (closeSummaryModalBtn) closeSummaryModalBtn.addEventListener('click', closeDashboardSummaryModal);
+    if (dashboardSummaryModal) {
+        dashboardSummaryModal.addEventListener('click', (e) => {
+            if (e.target === dashboardSummaryModal) closeDashboardSummaryModal();
+        });
+    }
+
+    function scrollToOfficialReports() {
+        closeDashboardSummaryModal();
+        const secA = document.getElementById('section-table-a');
+        if (secA) {
+            secA.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+    if (sidebarJumpReportsBtn) sidebarJumpReportsBtn.addEventListener('click', scrollToOfficialReports);
+    if (summaryJumpToTablesBtn) summaryJumpToTablesBtn.addEventListener('click', scrollToOfficialReports);
+
     // Add New Office Form (inside Office Accounts modal)
     const addOfficeForm = document.getElementById('add-office-form');
 
@@ -9795,6 +10483,9 @@ BISU Calape Campus Portal: https://bisu.edu.ph
 
             // Add to form config
             formConfig.offices.push(officeName);
+            if (Array.isArray(formConfig.archivedOffices)) {
+                formConfig.archivedOffices = formConfig.archivedOffices.filter(o => o !== officeName);
+            }
 
             // Add services for this office
             servicesByOffice[officeName] = services;

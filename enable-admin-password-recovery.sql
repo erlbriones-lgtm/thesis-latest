@@ -91,3 +91,19 @@ $$;
 
 -- 5. Grant execute permission on the RPC function to anon and authenticated users
 GRANT EXECUTE ON FUNCTION public.verify_recovery_code_and_reset_password(TEXT, TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- ============================================================================
+-- OPTIONAL: Supabase Email Template Configuration
+-- ============================================================================
+-- If you want Supabase to email the 6-digit OTP code automatically:
+--
+-- 1. Go to Supabase Dashboard > Authentication > Email Templates > Reset Password
+-- 2. Change the template body from using {{ .ConfirmationURL }} to {{ .Token }}
+--    Example template:
+--      Subject: "BISU Admin Recovery Code"
+--      Body: "Your recovery code is: {{ .Token }}. It expires in 15 minutes."
+--
+-- 3. (Recommended) Configure custom SMTP in Supabase Dashboard > Settings > Auth > SMTP
+--    to ensure reliable delivery (especially for .edu.ph domains).
+--    Gmail SMTP example: smtp.gmail.com:587, your Gmail, an App Password.
+-- ============================================================================

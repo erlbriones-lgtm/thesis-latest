@@ -1316,6 +1316,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetConfirmPasswordInput = document.getElementById('reset-confirm-password');
     const submitVerifyCodeBtn = document.getElementById('submit-verify-code-btn');
     const resendResetCodeBtn = document.getElementById('resend-reset-code-btn');
+    const copyRecoveryCodeBtn = document.getElementById('copy-recovery-code-btn');
+    const btnDispatchCodeGmail = document.getElementById('btn-dispatch-code-gmail');
+    const btnDispatchCodeMailto = document.getElementById('btn-dispatch-code-mailto');
+    const resetCodeDispatchBox = document.getElementById('reset-code-dispatch-box');
     const resetEmailInput = document.getElementById('reset-email');
     const submitResetBtn = document.getElementById('submit-reset-btn');
     const backToLoginBtn = document.getElementById('back-to-login-btn');
@@ -3117,6 +3121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === Admin Password Reset / Email Recovery Flow (with OTP Code & Row Level Security) ===
     let currentRecoveryEmail = '';
+    let currentRecoveryCode = '';
 
     function resetPasswordModalState() {
         if (passwordResetForm) {
@@ -3139,6 +3144,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitVerifyCodeBtn.innerHTML = '<i class="fa-solid fa-check-circle text-sm mr-2"></i> Verify Code & Reset Password';
         }
         currentRecoveryEmail = '';
+        currentRecoveryCode = '';
     }
 
     // Helper: Generate a secure 6-digit verification code
@@ -3191,6 +3197,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         return { code, codeRecorded };
+    }
+
+    // Helper: Update dispatch button URLs for Gmail and mailto
+    function updateDispatchButtons(email, code) {
+        const subject = encodeURIComponent('BISU Admin Password Recovery Code');
+        const body = encodeURIComponent(`Your BISU Admin Portal recovery code is: ${code}\n\nThis code expires in 15 minutes.\nIf you did not request this, please ignore this message.`);
+
+        if (btnDispatchCodeGmail) {
+            btnDispatchCodeGmail.onclick = () => {
+                window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${subject}&body=${body}`, '_blank');
+            };
+        }
+        if (btnDispatchCodeMailto) {
+            btnDispatchCodeMailto.onclick = () => {
+                window.location.href = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
+            };
+        }
+    }
+
+    // Copy Recovery Code Button
+    if (copyRecoveryCodeBtn) {
+        copyRecoveryCodeBtn.addEventListener('click', async () => {
+            if (!currentRecoveryCode) {
+                showToast('No recovery code generated yet.', 'error');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(currentRecoveryCode);
+                copyRecoveryCodeBtn.innerHTML = '<i class="fa-solid fa-check text-[10px]"></i> Copied!';
+                showToast('Recovery code copied to clipboard.', 'success');
+                setTimeout(() => {
+                    copyRecoveryCodeBtn.innerHTML = '<i class="fa-regular fa-copy text-[10px]"></i> Copy Code';
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = currentRecoveryCode;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                copyRecoveryCodeBtn.innerHTML = '<i class="fa-solid fa-check text-[10px]"></i> Copied!';
+                showToast('Recovery code copied to clipboard.', 'success');
+                setTimeout(() => {
+                    copyRecoveryCodeBtn.innerHTML = '<i class="fa-regular fa-copy text-[10px]"></i> Copy Code';
+                }, 2000);
+            }
+        });
     }
 
     // Forgot Password Button (opens modal)
@@ -3253,11 +3309,12 @@ document.addEventListener('DOMContentLoaded', () => {
             resendResetCodeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Resending...';
             try {
                 const { code } = await sendRecoveryCode(currentRecoveryEmail);
-                showToast(`New recovery code sent to ${currentRecoveryEmail}.`, 'success');
-                // Helpful pop-up with code in case SMTP is in local development
+                currentRecoveryCode = code;
+                updateDispatchButtons(currentRecoveryEmail, code);
+                showToast(`New recovery code generated.`, 'success');
                 Swal.fire({
-                    title: 'New Code Sent!',
-                    html: `A new 6-digit recovery code has been generated for <strong>${escapeHtml(currentRecoveryEmail)}</strong>.<br><br>Code: <strong class="text-xl font-mono text-bisu-blue tracking-widest bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">${code}</strong>`,
+                    title: 'New Code Generated!',
+                    html: `A new 6-digit recovery code for <strong>${escapeHtml(currentRecoveryEmail)}</strong>:<br><br><strong class="text-2xl font-mono text-bisu-blue tracking-[0.3em] bg-blue-50 px-4 py-2 rounded-lg border border-blue-200 inline-block">${code}</strong><br><br><span class="text-xs text-slate-500">Use the dispatch buttons to send it to your inbox.</span>`,
                     icon: 'info',
                     confirmButtonColor: '#1E3A8A'
                 });
@@ -3287,6 +3344,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 currentRecoveryEmail = email.toLowerCase();
                 const { code } = await sendRecoveryCode(currentRecoveryEmail);
+                currentRecoveryCode = code;
 
                 // Switch UI to Step 2: Ask for Code & New Password
                 passwordResetForm.classList.add('hidden');
@@ -3298,12 +3356,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => resetCodeInput.focus(), 100);
                 }
 
+                // Update dispatch button URLs with the generated code
+                updateDispatchButtons(currentRecoveryEmail, code);
+
                 // Show confirmation with code display (especially helpful for local/demo/SMTP testing)
                 Swal.fire({
-                    title: 'Recovery Code Sent!',
-                    html: `A 6-digit verification code has been dispatched for <strong>${escapeHtml(currentRecoveryEmail)}</strong>.<br><br>Code: <strong class="text-xl font-mono text-bisu-blue tracking-widest bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">${code}</strong><br><br><span class="text-xs text-slate-500">Please enter this verification code below to set your new password.</span>`,
+                    title: 'Recovery Code Generated!',
+                    html: `Your 6-digit verification code for <strong>${escapeHtml(currentRecoveryEmail)}</strong>:<br><br><strong class="text-2xl font-mono text-bisu-blue tracking-[0.3em] bg-blue-50 px-4 py-2 rounded-lg border border-blue-200 inline-block">${code}</strong><br><br><span class="text-xs text-slate-500">Use the buttons below the form to send this code to your email, or enter it directly.</span>`,
                     icon: 'info',
-                    confirmButtonText: 'Enter Code & Password',
+                    confirmButtonText: 'Got it',
                     confirmButtonColor: '#1E3A8A'
                 });
             } catch (error) {

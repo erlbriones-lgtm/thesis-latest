@@ -3405,37 +3405,18 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const { code } = await sendRecoveryCode(currentRecoveryEmail);
                 currentRecoveryCode = code;
-                updateDispatchButtons(currentRecoveryEmail, code);
-                if (resetActiveCodeDisplay) {
-                    resetActiveCodeDisplay.textContent = code;
-                }
                 if (resetCodeInput) {
-                    resetCodeInput.value = code;
+                    resetCodeInput.value = '';
+                    resetCodeInput.focus();
                 }
-                showToast(`New recovery code generated.`, 'success');
+                showToast(`New verification code sent to ${currentRecoveryEmail}.`, 'success');
                 Swal.fire({
-                    title: 'New Verification Code Ready!',
-                    html: `
-                        <p class="text-xs text-slate-600 mb-2">Your 6-digit recovery OTP code for <strong>${escapeHtml(currentRecoveryEmail)}</strong>:</p>
-                        <div class="py-2 mb-2">
-                            <span class="text-3xl font-mono font-black text-bisu-blue tracking-[0.3em] bg-blue-50 px-5 py-2.5 rounded-2xl border-2 border-blue-200 inline-block shadow-inner">${code}</span>
-                        </div>
-                        <p class="text-[11px] text-emerald-800 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-left">
-                            <i class="fa-solid fa-check-circle text-emerald-600 mr-1"></i>
-                            <strong>Code Auto-Filled:</strong> We have automatically filled this code into the verification form so you can set your new password immediately.
-                        </p>
-                    `,
-                    icon: 'success',
-                    showCancelButton: true,
-                    confirmButtonText: '<i class="fa-brands fa-google mr-1.5"></i> Also Send via Gmail',
-                    cancelButtonText: 'Enter New Password',
-                    confirmButtonColor: '#dc2626',
-                    cancelButtonColor: '#1E3A8A',
-                    customClass: { popup: 'rounded-3xl shadow-2xl font-sans' }
-                }).then((res) => {
-                    if (res.isConfirmed && btnDispatchCodeGmail) {
-                        btnDispatchCodeGmail.click();
-                    }
+                    title: 'New Code Dispatched!',
+                    html: `A new 6-digit recovery code has been sent to <strong>${escapeHtml(currentRecoveryEmail)}</strong>.<br><br><span class="text-xs text-slate-500">Please check your email inbox and spam folder, then enter the code below.</span>`,
+                    icon: 'info',
+                    confirmButtonText: 'I Understand',
+                    confirmButtonColor: '#1E3A8A',
+                    customClass: { popup: 'rounded-3xl shadow-xl' }
                 });
             } catch (err) {
                 showToast('Failed to resend code: ' + (err.message || err), 'error');
@@ -3469,39 +3450,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 passwordResetForm.classList.add('hidden');
                 passwordVerifyCodeForm.classList.remove('hidden');
                 if (resetTargetEmailDisplay) resetTargetEmailDisplay.textContent = currentRecoveryEmail;
-                if (resetModalSubtitle) resetModalSubtitle.textContent = 'Enter the 6-digit code and choose your new password';
-                if (resetActiveCodeDisplay) resetActiveCodeDisplay.textContent = code;
+                if (resetModalSubtitle) resetModalSubtitle.textContent = 'Enter the 6-digit code sent to your email';
                 if (resetCodeInput) {
-                    resetCodeInput.value = code; // Auto-fill so the user can never get stuck!
-                    setTimeout(() => resetNewPasswordInput ? resetNewPasswordInput.focus() : resetCodeInput.focus(), 150);
+                    resetCodeInput.value = '';
+                    setTimeout(() => resetCodeInput.focus(), 150);
                 }
 
-                // Update dispatch button URLs with the generated code
-                updateDispatchButtons(currentRecoveryEmail, code);
-
                 Swal.fire({
-                    title: 'Verification Code Ready!',
-                    html: `
-                        <p class="text-xs text-slate-600 mb-2">Your 6-digit recovery OTP code for <strong>${escapeHtml(currentRecoveryEmail)}</strong>:</p>
-                        <div class="py-2 mb-2">
-                            <span class="text-3xl font-mono font-black text-bisu-blue tracking-[0.3em] bg-blue-50 px-5 py-2.5 rounded-2xl border-2 border-blue-200 inline-block shadow-inner">${code}</span>
-                        </div>
-                        <p class="text-[11px] text-emerald-800 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-left">
-                            <i class="fa-solid fa-check-circle text-emerald-600 mr-1"></i>
-                            <strong>Code Auto-Filled:</strong> The code is already auto-filled below! Simply type your new password and submit.
-                        </p>
-                    `,
+                    title: 'Verification Code Sent!',
+                    html: `A 6-digit recovery code has been dispatched to <strong>${escapeHtml(currentRecoveryEmail)}</strong>.<br><br><span class="text-xs text-slate-500">Please check your email inbox and spam folder, then enter the code below to reset your password.</span>`,
                     icon: 'success',
-                    showCancelButton: true,
-                    confirmButtonText: '<i class="fa-brands fa-google mr-1.5"></i> Also Send via Gmail',
-                    cancelButtonText: 'Set New Password Now',
-                    confirmButtonColor: '#dc2626',
-                    cancelButtonColor: '#1E3A8A',
-                    customClass: { popup: 'rounded-3xl shadow-2xl font-sans' }
-                }).then((res) => {
-                    if (res.isConfirmed && btnDispatchCodeGmail) {
-                        btnDispatchCodeGmail.click();
-                    }
+                    confirmButtonText: 'Enter Code',
+                    confirmButtonColor: '#1E3A8A',
+                    customClass: { popup: 'rounded-3xl shadow-xl' }
                 });
             } catch (error) {
                 console.error('Password reset request error:', error);
@@ -3588,7 +3549,25 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
                     } catch (otpEx) {
-                        console.warn('Native OTP verify notice:', otpEx);
+                        console.warn('Native recovery OTP verify notice:', otpEx);
+                    }
+
+                    if (!resetSuccess) {
+                        try {
+                            const { data: verifyData, error: verifyErr } = await client.auth.verifyOtp({
+                                email: email,
+                                token: code,
+                                type: 'email'
+                            });
+                            if (!verifyErr && verifyData?.user) {
+                                const { error: updateAuthErr } = await client.auth.updateUser({ password: newPassword });
+                                if (!updateAuthErr) {
+                                    resetSuccess = true;
+                                }
+                            }
+                        } catch (otpEx) {
+                            console.warn('Native email OTP verify notice:', otpEx);
+                        }
                     }
                 }
 

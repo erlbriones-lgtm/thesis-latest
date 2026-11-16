@@ -75,46 +75,15 @@
                 </button>
             </div>
 
-            <!-- Active Code & Auto-fill Helper Banner -->
-            <div id="reset-code-active-banner" class="bg-emerald-50 border border-emerald-200/90 rounded-2xl p-3 flex items-center justify-between text-xs">
-                <div class="flex items-center gap-2.5">
-                    <span class="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
-                        <i class="fa-solid fa-key text-xs"></i>
-                    </span>
-                    <div>
-                        <span class="text-slate-500 block text-[10px] uppercase font-bold tracking-wider">Your Active OTP Code</span>
-                        <strong id="reset-active-code-display" class="text-emerald-800 font-mono text-base font-black tracking-widest">------</strong>
-                    </div>
+            <!-- Email Dispatched Notification Banner -->
+            <div class="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 flex items-start gap-3 text-xs">
+                <i class="fa-solid fa-paper-plane text-bisu-blue text-base shrink-0 mt-0.5"></i>
+                <div class="space-y-1">
+                    <p class="font-bold text-slate-800 text-xs">Verification Code Sent via Email</p>
+                    <p class="text-slate-500 text-[11px] leading-relaxed">
+                        A 6-digit verification code has been dispatched to your email address. Please check your inbox (and spam folder) and enter the code below to proceed.
+                    </p>
                 </div>
-                <button type="button" id="autofill-recovery-code-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] px-3 py-1.5 rounded-xl transition shadow-2xs flex items-center gap-1.5 cursor-pointer">
-                    <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i> Auto-fill Code
-                </button>
-            </div>
-
-            <!-- Direct Email Dispatch & Copy Options -->
-            <div id="reset-code-dispatch-box" class="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 space-y-2.5">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                        <i class="fa-solid fa-paper-plane text-bisu-blue text-xs"></i> Deliver Code to Inbox:
-                    </span>
-                    <button type="button" id="copy-recovery-code-btn" class="text-[11px] font-bold text-slate-700 hover:text-bisu-blue bg-white border border-slate-200 px-2.5 py-1 rounded-lg transition shadow-2xs flex items-center gap-1 cursor-pointer">
-                        <i class="fa-regular fa-copy text-[10px]"></i> Copy Code
-                    </button>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-2">
-                    <button type="button" id="btn-dispatch-code-gmail" class="py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer">
-                        <i class="fa-brands fa-google text-xs"></i> Send via Gmail
-                    </button>
-                    <button type="button" id="btn-dispatch-code-mailto" class="py-2 px-3 bg-bisu-blue hover:bg-bisu-blue-dark text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer">
-                        <i class="fa-solid fa-envelope text-xs"></i> Default Mail App
-                    </button>
-                </div>
-
-                <p class="text-[11px] text-slate-500 leading-tight pt-1 border-t border-slate-200/60">
-                    <i class="fa-solid fa-circle-info text-blue-500 mr-1"></i>
-                    Didn't receive an automatic email? Click <strong>Send via Gmail</strong> or use the verification code shown on screen.
-                </p>
             </div>
 
             <!-- Recovery Code Input -->

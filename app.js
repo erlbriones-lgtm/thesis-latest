@@ -3576,7 +3576,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof getLocalOfficeAccounts === 'function') {
             localAccounts = getLocalOfficeAccounts();
         }
-        const matchedLocalOffice = localAccounts.find(acc => acc.email && acc.email.toLowerCase() === email.toLowerCase());
+        const matchedLocalOffice = localAccounts.find(acc => acc.email && acc.email.toLowerCase() === email.toLowerCase() && acc.password && acc.password === password);
 
         const client = await getSupabaseClient();
 
@@ -3626,7 +3626,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     .eq('email', email)
                     .maybeSingle();
                 if (officeRows) {
-                    if (!officeRows.password || officeRows.password === password) {
+                    if (officeRows.password && officeRows.password === password) {
                         matchedOffice = officeRows;
                     }
                 }
@@ -3644,7 +3644,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (sData && Array.isArray(sData.config)) {
                         const found = sData.config.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
                         if (found) {
-                            if (!found.password || found.password === password) {
+                            if (found.password && found.password === password) {
                                 matchedOffice = found;
                             }
                         }

@@ -75,6 +75,22 @@
                 </button>
             </div>
 
+            <!-- Active Code & Auto-fill Helper Banner -->
+            <div id="reset-code-active-banner" class="bg-emerald-50 border border-emerald-200/90 rounded-2xl p-3 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                        <i class="fa-solid fa-key text-xs"></i>
+                    </span>
+                    <div>
+                        <span class="text-slate-500 block text-[10px] uppercase font-bold tracking-wider">Your Active OTP Code</span>
+                        <strong id="reset-active-code-display" class="text-emerald-800 font-mono text-base font-black tracking-widest">------</strong>
+                    </div>
+                </div>
+                <button type="button" id="autofill-recovery-code-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] px-3 py-1.5 rounded-xl transition shadow-2xs flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i> Auto-fill Code
+                </button>
+            </div>
+
             <!-- Direct Email Dispatch & Copy Options -->
             <div id="reset-code-dispatch-box" class="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 space-y-2.5">
                 <div class="flex items-center justify-between">

@@ -3199,10 +3199,71 @@ document.addEventListener('DOMContentLoaded', () => {
         return { code, codeRecorded };
     }
 
+    // Helper: Update office account password across Supabase and local storage
+    async function updateOfficeAccountPasswordEverywhere(email, newPassword) {
+        const cleanEmail = email.toLowerCase().trim();
+        // 1. Update localStorage cache
+        try {
+            if (typeof getLocalOfficeAccounts === 'function' && typeof saveLocalOfficeAccounts === 'function') {
+                const localList = getLocalOfficeAccounts();
+                let changed = false;
+                const updatedLocal = localList.map(acc => {
+                    if (acc.email && acc.email.toLowerCase() === cleanEmail) {
+                        changed = true;
+                        return { ...acc, password: newPassword, updated_at: new Date().toISOString() };
+                    }
+                    return acc;
+                });
+                if (changed) {
+                    saveLocalOfficeAccounts(updatedLocal);
+                }
+            }
+        } catch (e) {
+            console.warn('Local office password cache update error:', e);
+        }
+
+        // 2. Update Supabase office_accounts table & admin_settings
+        const client = await getSupabaseClient();
+        if (client) {
+            try {
+                await client.from('office_accounts')
+                    .update({ password: newPassword, updated_at: new Date().toISOString() })
+                    .eq('email', cleanEmail);
+            } catch (e) {
+                console.warn('Supabase office_accounts table update error:', e);
+            }
+
+            try {
+                const { data: sData } = await client
+                    .from('admin_settings')
+                    .select('config')
+                    .eq('id', 'office_accounts')
+                    .maybeSingle();
+                if (sData && Array.isArray(sData.config)) {
+                    let confChanged = false;
+                    const newConfig = sData.config.map(item => {
+                        if (item.email && item.email.toLowerCase() === cleanEmail) {
+                            confChanged = true;
+                            return { ...item, password: newPassword, updated_at: new Date().toISOString() };
+                        }
+                        return item;
+                    });
+                    if (confChanged) {
+                        await client.from('admin_settings')
+                            .update({ config: newConfig })
+                            .eq('id', 'office_accounts');
+                    }
+                }
+            } catch (e) {
+                console.warn('Supabase admin_settings office update error:', e);
+            }
+        }
+    }
+
     // Helper: Update dispatch button URLs for Gmail and mailto
     function updateDispatchButtons(email, code) {
-        const subject = encodeURIComponent('BISU Admin Password Recovery Code');
-        const body = encodeURIComponent(`Your BISU Admin Portal recovery code is: ${code}\n\nThis code expires in 15 minutes.\nIf you did not request this, please ignore this message.`);
+        const subject = encodeURIComponent('BISU Calape Portal - Password Recovery OTP Code');
+        const body = encodeURIComponent(`Your BISU Calape Portal verification OTP code is: ${code}\n\nThis code will expire in 15 minutes.\nIf you did not request a password recovery, you can safely ignore this email.\n\nBISU Calape Campus Portal System`);
 
         if (btnDispatchCodeGmail) {
             btnDispatchCodeGmail.onclick = () => {
@@ -3503,10 +3564,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error('Invalid or expired verification code. Please check your code or request a new one.');
                 }
 
+                // Update password everywhere for office accounts (Supabase table, admin_settings, and local storage cache)
+                await updateOfficeAccountPasswordEverywhere(email, newPassword);
+
                 // Success!
                 await Swal.fire({
                     title: 'Password Reset Successful!',
-                    html: `Your password for <strong>${escapeHtml(email)}</strong> has been successfully updated.<br><span class="text-xs text-slate-500">You can now sign in to the Admin Dashboard with your new credentials.</span>`,
+                    html: `Your password for <strong>${escapeHtml(email)}</strong> has been successfully updated.<br><span class="text-xs text-slate-500">You can now sign in with your new credentials.</span>`,
                     icon: 'success',
                     confirmButtonText: 'Go to Login',
                     confirmButtonColor: '#059669',

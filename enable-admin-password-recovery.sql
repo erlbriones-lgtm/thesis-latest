@@ -93,17 +93,68 @@ $$;
 GRANT EXECUTE ON FUNCTION public.verify_recovery_code_and_reset_password(TEXT, TEXT, TEXT) TO anon, authenticated, service_role;
 
 -- ============================================================================
--- OPTIONAL: Supabase Email Template Configuration
+-- HOW TO SETUP AUTOMATIC OTP EMAIL SENDING IN SUPABASE
 -- ============================================================================
--- If you want Supabase to email the 6-digit OTP code automatically:
+-- Follow these 3 simple steps in your Supabase Project Dashboard:
 --
--- 1. Go to Supabase Dashboard > Authentication > Email Templates > Reset Password
--- 2. Change the template body from using {{ .ConfirmationURL }} to {{ .Token }}
---    Example template:
---      Subject: "BISU Admin Recovery Code"
---      Body: "Your recovery code is: {{ .Token }}. It expires in 15 minutes."
+-- ----------------------------------------------------------------------------
+-- STEP 1: Enable Custom SMTP (Crucial for Gmail & @bisu.edu.ph delivery)
+-- ----------------------------------------------------------------------------
+-- Supabase's built-in default mail service is restricted to 3-4 emails/hour on 
+-- free tier and is often filtered by university firewalls (@bisu.edu.ph).
+-- To send real OTP emails reliably without limits:
 --
--- 3. (Recommended) Configure custom SMTP in Supabase Dashboard > Settings > Auth > SMTP
---    to ensure reliable delivery (especially for .edu.ph domains).
---    Gmail SMTP example: smtp.gmail.com:587, your Gmail, an App Password.
+-- 1. Go to: Supabase Dashboard > Project Settings (Gear icon) > Authentication
+-- 2. Scroll to "SMTP Settings" and toggle ON "Enable Custom SMTP"
+-- 3. Enter your SMTP details (e.g., using free Gmail SMTP or Resend):
+--
+--    [Option A: Using Google / Gmail SMTP]
+--    - Sender Email: your_email@gmail.com (or your campus email)
+--    - Sender Name: BISU Calape Portal
+--    - Host: smtp.gmail.com
+--    - Port: 587
+--    - Encryption: TLS
+--    - User: your_email@gmail.com
+--    - Password: [16-character Google App Password]
+--      (To generate an App Password: Go to your Google Account > Security > 
+--       2-Step Verification > App passwords > Create one for "Supabase")
+--
+--    [Option B: Using Resend (Free 3,000 emails/month)]
+--    - Sender Email: onboarding@resend.dev (or verified domain)
+--    - Sender Name: BISU Calape Portal
+--    - Host: smtp.resend.com
+--    - Port: 587 (or 465)
+--    - User: resend
+--    - Password: your_resend_api_key (starts with "re_...")
+--
+-- ----------------------------------------------------------------------------
+-- STEP 2: Configure the Reset Password Email Template to send the 6-Digit OTP
+-- ----------------------------------------------------------------------------
+-- By default, Supabase sends a confirmation link ({{ .ConfirmationURL }}).
+-- To send the 6-digit OTP code directly to their inbox:
+--
+-- 1. Go to: Supabase Dashboard > Authentication > Email Templates
+-- 2. Select the "Reset Password" template
+-- 3. Change "Subject" to:
+--    BISU Calape Portal - Password Reset OTP Code
+-- 4. Replace the email body with:
+--    <h2>Reset Your Password</h2>
+--    <p>Hello,</p>
+--    <p>You requested to reset your password for your BISU Calape Portal account.</p>
+--    <p>Your 6-digit verification OTP code is:</p>
+--    <p style="font-size: 26px; font-weight: bold; letter-spacing: 4px; color: #1E3A8A; background: #EEF2FF; padding: 12px 20px; border-radius: 8px; display: inline-block;">
+--        {{ .Token }}
+--    </p>
+--    <p>This code will expire in 15 minutes. If you did not make this request, you can safely ignore this email.</p>
+--    <br>
+--    <p>Best regards,<br>BISU Calape Campus Portal System</p>
+-- 5. Click "Save Changes"
+--
+-- ----------------------------------------------------------------------------
+-- STEP 3: Multi-Channel Backup Built into the App
+-- ----------------------------------------------------------------------------
+-- In case custom SMTP is ever down or during local development:
+-- 1. The portal displays "Send via Gmail" and "Default Mail App" buttons pre-filled
+--    with the 6-digit OTP code, recipient, and instructions.
+-- 2. A copy button and on-screen code prompt are provided for immediate access.
 -- ============================================================================

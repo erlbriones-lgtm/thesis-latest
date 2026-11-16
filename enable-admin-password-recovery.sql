@@ -1,6 +1,9 @@
 -- Admin Password Recovery with Verification Code & Row Level Security (RLS)
 -- Run this script in your Supabase SQL Editor (Dashboard > SQL Editor > New query)
 
+-- 0. Ensure pgcrypto extension is enabled for password hashing
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- 1. Create table to store password recovery verification codes
 CREATE TABLE IF NOT EXISTS public.admin_recovery_codes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -145,7 +148,7 @@ GRANT EXECUTE ON FUNCTION public.verify_recovery_code_and_reset_password(TEXT, T
 --    <p style="font-size: 26px; font-weight: bold; letter-spacing: 4px; color: #1E3A8A; background: #EEF2FF; padding: 12px 20px; border-radius: 8px; display: inline-block;">
 --        {{ .Token }}
 --    </p>
---    <p>This code will expire in 15 minutes. If you did not make this request, you can safely ignore this email.</p>
+--    <p>This code will expire in 60 minutes. If you did not make this request, you can safely ignore this email.</p>
 --    <br>
 --    <p>Best regards,<br>BISU Calape Campus Portal System</p>
 -- 5. Click "Save Changes"

@@ -3810,7 +3810,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const { data: officeRows } = await client.from('office_accounts')
                     .select('office_name, email, password')
-                    .eq('email', email)
+                    .ilike('email', email.trim())
                     .maybeSingle();
                 if (officeRows) {
                     if (officeRows.password && officeRows.password === password) {
